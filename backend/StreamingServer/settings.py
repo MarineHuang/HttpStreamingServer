@@ -34,7 +34,9 @@ if os.getenv('DEPLOY_ENV', 'dev') == 'production':
 else:
     DEBUG = True
     VERBOSE_OUTPUT = True
-    VIDEO_URL = 'http://localhost:1337/Videos/'
+    ALLOWED_HOSTS.append(os.getenv('HTTPSTREAMING_HOST', ''))
+    VIDEO_URL = '/Videos/'
+    STATICFILES_DIRS = (os.path.join(BASE_DIR, '../frontend/build/static/'),)
     INTERNAL_IPS = ['127.0.0.1']
 
     # Normally django debug toolbar uses `INTERNAL_IPS` to check if it should show, but in
@@ -117,7 +119,7 @@ ROOT_URLCONF = 'StreamingServer.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, '../frontend/build/')],
+		'DIRS': [os.path.join(BASE_DIR, '../frontend/build/')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -134,8 +136,7 @@ WSGI_APPLICATION = 'StreamingServer.wsgi.application'
 
 # Database
 DATABASE_URL_ENV_NAME = 'DJANGO_DATABASE_URL'
-DATABASES = {'default': dj_database_url.config(
-    DATABASE_URL_ENV_NAME, default='postgres://postgres:postgres@db/streaming_server')}
+DATABASES = {'default': dj_database_url.config(DATABASE_URL_ENV_NAME)}
 
 
 # Password validation

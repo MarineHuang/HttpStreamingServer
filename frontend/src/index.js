@@ -14,12 +14,13 @@ if(process.env.REACT_APP_SENTRY_DSN){
     Sentry.init({dsn: process.env.REACT_APP_SENTRY_DSN});
 }
 
-    ReactDOM.render(
+ReactDOM.render(
     <BrowserRouter>
         <ThemeProvider>
         <App /> 
         </ThemeProvider>
-    </BrowserRouter>, document.getElementById('root'),
+    </BrowserRouter>, 
+    document.getElementById('root'),
 );
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.

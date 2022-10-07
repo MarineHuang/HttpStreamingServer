@@ -12,6 +12,7 @@ function VideoDetail  ({ video, handleVideoSelect, authTokens, setHistoryPager }
     const [timer, setTimer] = useState(false);
     const [count, setCount] = useState(0);
     const [player, setPlayer] = useState(dashjs.MediaPlayer().create());
+    //console.log("dashjs.MediaPlayer version: "+player.getVersion());
     const [playerIsInitialized, setPlayerIsInitialized] = useState(false);
     
     async function HandleNextEpisode(handleVideoSelect, nextEpisodeID) {
@@ -85,10 +86,9 @@ function VideoDetail  ({ video, handleVideoSelect, authTokens, setHistoryPager }
         <div>
             <div className="ui embed">
                 <div>
-                    <video id="videoPlayer" controls
-                        onLoadedData={() => { 
-                            canPlay(video) }} onPlay={() => { startVideo() 
-                        }}
+                    <video id="videoPlayer" crossorigin="anonymous" controls
+                        onLoadedData={() => { canPlay(video) }} 
+                        onPlay={() => { startVideo() }}
                         onPause={() => setTimer(false)}>
                         <source />
                         {!video.subtitles ? null : video.subtitles.map((sub, index) =>
