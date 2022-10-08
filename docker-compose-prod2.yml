@@ -14,10 +14,11 @@ services:
       - .env
     volumes:
       - dbvolume:/var/lib/postgresql/data/
+ 
   web:
     build:
       context: .
-      dockerfile: ./backend/Dockerfile
+      dockerfile: ./backend/Dockerfile.prod2
     restart: always
     ports:
       - 8000:8000
@@ -28,8 +29,6 @@ services:
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - HTTPSTREAMING_HOST=${HTTPSTREAMING_HOST} 
     volumes:
-      - ./frontend/build/:/usr/src/frontend/build
-      - ./backend/:/usr/src/app/
       - ./Videos/:/usr/src/app/Videos
       - static_volume:/usr/static/
       - /static/
