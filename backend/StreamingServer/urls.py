@@ -16,10 +16,14 @@ Including another URLconf
 from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include
+from django.conf.urls import url
+from StreamServerApp import views as appviews
 
 urlpatterns = [
     path('streaming/', include('StreamServerApp.urls')),
     path('admin/', admin.site.urls),
+	# empty url
+	url(r'^$', appviews.videos.index),
 ]
 
 if settings.DEBUG:
