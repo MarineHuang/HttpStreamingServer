@@ -15,18 +15,21 @@ services:
       - 5543:5432
     volumes:
       - dbvolume:/var/lib/postgresql/data/
+  
   web:
-    image: webmultimedia/http-streaming-server:master
     build:
       context: .
       dockerfile: ./backend/Dockerfile.prod
     restart: always
     ports:
-      - 51413:51413
+      - 8000:8000
+      - 9091:9091
     env_file:
       - .env
     environment:
       - DEPLOY_ENV=production
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - HTTPSTREAMING_HOST=${HTTPSTREAMING_HOST}
     volumes:
       - ./Videos/:/usr/src/app/Videos
       - static_volume:/usr/static/
@@ -44,7 +47,7 @@ services:
       - static_volume:/usr/static/
       - torrent:/usr/torrent/:rw
     ports:
-      - 1337:80
+      - 80:80
     depends_on:
       - web
 
@@ -52,7 +55,6 @@ services:
     build:
       context: .
       dockerfile: ./backend/Dockerfile.prod
-    image: webmultimedia/http-streaming-server:master
     command: celery -A StreamingServer worker -l info
     volumes:
         - ./Videos/:/usr/src/app/Videos
