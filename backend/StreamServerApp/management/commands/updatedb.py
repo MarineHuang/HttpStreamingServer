@@ -20,8 +20,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **kwargs):
-        keep_files = False
-        if kwargs['keepfiles']:
-            keep_files = True
-        update_db_from_local_folder(settings.VIDEO_ROOT, settings.VIDEO_URL, keep_files)
-        update_db_from_local_folder("/usr/torrent/", "/torrents/", keep_files)
+        keep_files = True
+        if "false" == kwargs['keepfiles']:
+            keep_files = False
+        update_db_from_local_folder("/usr/torrent/", settings.VIDEO_ROOT, settings.VIDEO_URL, keep_files)

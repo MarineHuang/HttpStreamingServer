@@ -7,6 +7,7 @@ import subliminal
 import ffmpeg
 import sys
 import string
+import datetime
 from StreamServerApp.media_management.encoder import h264_encoder, aac_encoder, extract_audio
 from StreamServerApp.media_management.dash_packager import dash_packager
 from StreamServerApp.media_management.fileinfo import createfileinfo, readfileinfo
@@ -103,15 +104,14 @@ def generate_thumbnail(input_file, duration, output_file):
 
 
 def prepare_video(video_full_path,
-                  video_path,
-                  video_dir,
-                  remote_url,
+                  repository_local_path,
+                  repository_remote_url,
                   keep_files=False):
     """ # Create thumbnail, transmux if necessayr and get all the videos infos.
         Args:
-        full_path: full path to the video (eg: /Videos/folder1/video.mp4)
-        video_path: path to the video basedir (eg: /Videos/)
-        video_dir: path to the video dir (eg: /Videos/folder1/)
+        video_full_path: full path to the video (eg: /usr/torrent/folder1/Dune.mp4)
+        repository_local_path: path to the video repository (eg: /usr/Videos/)
+        repository_remote_url: url to the video repository (eg: /Videos/)
         keep_files: Keep original files in case of convertion
 
         return: Dictionnary with video infos
@@ -120,6 +120,16 @@ def prepare_video(video_full_path,
         they are encoded with h264/AAC codec
     """
     print("processing {}".format(video_full_path))
+
+    video_file_name_wo_ext = os.path.splitext(os.path.split(video_full_path)[-1])[0]
+    # /usr/Videos/2022-10-15/Dune
+    dash_output_directory = os.path.join(repository_local_path,
+        datetime.datetime.now().strftime('%Y-%m-%d'),
+        video_file_name_wo_ext
+    )
+    if not os.path.exists(dash_output_directory):
+        os.makedirs(dash_output_directory)
+    
     try:
         probe = ffmpeg.probe(video_full_path)
     except ffmpeg.Error as e:
@@ -133,7 +143,6 @@ def prepare_video(video_full_path,
     if video_stream is None:
         print('No video stream found', file=sys.stderr)
         return {}
-
 
     video_codec_type = video_stream['codec_name']
     video_width = video_stream['width']
@@ -159,7 +168,9 @@ def prepare_video(video_full_path,
     for stream in probe['streams']:
         if stream['codec_type'] == 'subtitle':
             print('Found Subtitles in the input stream')
-            webvtt_ov_fullpath_tmp = os.path.splitext(video_full_path)[0]+'_ov_{}.vtt'.format(subtitles_index)
+            webvtt_ov_fullpath_tmp = os.path.join(dash_output_directory,
+                '{}_ov_{}.vtt'.format(video_file_name_wo_ext, subtitles_index)
+            )
             print(video_full_path)
             print(webvtt_ov_fullpath_tmp)
             extract_subtitle(video_full_path, webvtt_ov_fullpath_tmp, subtitles_index)
@@ -167,13 +178,15 @@ def prepare_video(video_full_path,
             subtitles_index += 1
 
     audio_codec_type = audio_stream['codec_name']
-    audio_elementary_stream_path = "{}.m4a".format(
-        os.path.splitext(video_full_path)[0])
 
-    video_elementary_stream_path_high_layer = "{}_{}.264".format(
-        os.path.splitext(video_full_path)[0], video_height)
+    audio_elementary_stream_path = os.path.join(dash_output_directory,
+        "{}.m4a".format(video_file_name_wo_ext)
+    )
 
-    dash_output_directory = os.path.splitext(video_full_path)[0]
+    video_elementary_stream_path_high_layer = os.path.join(dash_output_directory,
+        "{}_{}.264".format(video_file_name_wo_ext, video_height)
+    )
+
     temp_mpd = "{}/playlist.mpd".format(dash_output_directory)
 
     if "aac" in audio_codec_type:
@@ -189,8 +202,10 @@ def prepare_video(video_full_path,
     print("high_layer_bitrate = {}".format(high_layer_bitrate))
     low_layer_bitrate = int(os.getenv('480P_LAYER_BITRATE', 400000))
     low_layer_height = int(video_height / 2.0)
-    video_elementary_stream_path_low_layer = "{}_low.264".format(
-        os.path.splitext(video_full_path)[0])
+
+    video_elementary_stream_path_low_layer = os.path.join(dash_output_directory,
+        "{}_low.264".format(video_file_name_wo_ext)
+    )
 
     h264_encoder(
         video_full_path,
@@ -201,15 +216,8 @@ def prepare_video(video_full_path,
             video_full_path,
             video_elementary_stream_path_low_layer, low_layer_height, low_layer_bitrate)
 
-    relative_path = os.path.relpath(video_full_path, video_path)
-
-    if not os.path.exists(dash_output_directory):
-        os.mkdir(dash_output_directory)
-
     #Thumbnail creation
     thumbnail_fullpath = "{}/thumbnail.jpeg".format(dash_output_directory)
-
-    thumbnail_relativepath = os.path.relpath(thumbnail_fullpath, video_path)
     if (os.path.isfile(thumbnail_fullpath) is False):
         generate_thumbnail(video_full_path, duration, thumbnail_fullpath)
 
@@ -226,10 +234,12 @@ def prepare_video(video_full_path,
     if not keep_files:
         os.remove(video_full_path)
 
-    relative_path = os.path.relpath(temp_mpd, video_path)
+    relative_path = os.path.relpath(temp_mpd, repository_local_path)
+    remote_video_url = os.path.join(repository_remote_url, relative_path)
 
-    remote_video_url = os.path.join(remote_url, relative_path)
-    remote_thumbnail_url = os.path.join(remote_url, thumbnail_relativepath)
+    thumbnail_relativepath = os.path.relpath(thumbnail_fullpath, repository_local_path)
+    remote_thumbnail_url = os.path.join(repository_remote_url, thumbnail_relativepath)
+
     video_info = {
         'remote_video_url': remote_video_url,
         'video_codec_type': video_codec_type,

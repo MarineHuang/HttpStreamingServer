@@ -40,28 +40,27 @@ def get_num_videos():
     return Video.objects.count()
 
 
-def update_db_from_local_folder(base_path, remote_url, keep_files=False):
+def update_db_from_local_folder(scan_path, repository_path, repository_url, keep_files=True):
     """ #  Update  the videos infos in the database
         Args:
-        remote_url: baseurl for video access on the server
-        base_path: Local Folder where the videos are stored
+        scan_path: Local Folder where the videos are stored
+        repository_path: path to the video repository (eg: /usr/Videos/)
+        repository_url: url to the video repository (eg: /Videos/)
 
         this functions will only add videos to the database if
         they are encoded with h264 codec
     """
 
     init_cache()
-    video_path = base_path
     idx = 0
     count_series = 0
     count_movies = 0
 
     database_old_files = Video.objects.values_list('video_folder', 'id')
-
     old_path_set = set()
-
     #We check here if old database files are still present on filesystem, if not, delete from db
     video_ids_to_delete = []
+
     for old_files_path, old_video_id in database_old_files:
         if os.path.isfile(old_files_path) is False:
             print(old_files_path + "will be deleted")
@@ -70,14 +69,13 @@ def update_db_from_local_folder(base_path, remote_url, keep_files=False):
             old_path_set.add(old_files_path)
 
     Video.objects.filter(pk__in=video_ids_to_delete).delete()
-
     #Remove empty Series/Movies dataset
     Series.objects.filter(video=None).delete()
     Movie.objects.filter(video=None).delete()
 
     num_video_before = get_num_videos()
 
-    for root, directories, filenames in os.walk(video_path):
+    for root, directories, filenames in os.walk(scan_path):
         for filename in filenames:
             full_path = os.path.join(root, filename)
             if full_path in old_path_set:
@@ -91,7 +89,7 @@ def update_db_from_local_folder(base_path, remote_url, keep_files=False):
                     # Atomic transaction in order to make all occur or nothing occurs in case of exception raised
                     with transaction.atomic():
                         created = add_one_video_to_database(
-                            full_path, video_path, root, remote_url, filename,
+                            full_path, repository_path, repository_url, filename,
                             keep_files)
                         if created == 1:
                             count_movies += 1
@@ -107,7 +105,7 @@ def update_db_from_local_folder(base_path, remote_url, keep_files=False):
                     # Atomic transaction in order to make all occur or nothing occurs in case of exception raised
                     with transaction.atomic():
                         retValue = add_one_manifest_to_database(
-                            full_path, video_path, root, remote_url, filename,
+                            full_path, repository_path, repository_url, filename,
                             keep_files)
                         if retValue == 1:
                             count_movies += 1
@@ -128,26 +126,22 @@ def update_db_from_local_folder(base_path, remote_url, keep_files=False):
 
 
 def add_one_video_to_database(full_path,
-                              video_path,
-                              root,
-                              remote_url,
+                              repository_path,
+                              repository_url,
                               filename,
                               keep_files=False):
     """ # create infos in the database for one video
 
         Args:
         full_path: absolue path to the video
-        video_path: relative (to root) basepath (ie directory) containing video
-        root: absolute path to directory containing all the videos
-        remote_url: baseurl for video access on the server
+        repository_path: path to the video repository (eg: /usr/Videos/)
+        repository_url: url to the video repository (eg: /Videos/)
         keep_files: Keep files in case of convertion
 
         return 0 if noseries/movies was created, 1 if a movies was created, 2 if a series was created
 
     """
-    # Print current working directory
-    print("Current working dir : %s" % root)
-    video_infos = prepare_video(full_path, video_path, root, remote_url,
+    video_infos = prepare_video(full_path, repository_path, repository_url,
                                 keep_files)
     if not video_infos:
         print("video infos are empty, don't add to database")
@@ -192,40 +186,38 @@ def add_one_video_to_database(full_path,
         for ov_subtitle_path in video_infos["ov_subtitles"]:
             ov_sub = Subtitle()
             webvtt_subtitles_relative_path = os.path.relpath(
-                ov_subtitle_path, video_path)
+                ov_subtitle_path, repository_path)
             ov_sub.webvtt_subtitle_url = os.path.join(
-                remote_url, webvtt_subtitles_relative_path)
+                repository_url, webvtt_subtitles_relative_path)
             ov_sub.language = Subtitle.OV
             ov_sub.video_id = v
             ov_sub.save()
 
         #we use oncommit because autocommit is not enabled.
         transaction.on_commit(lambda: get_subtitles_async.delay(
-            v.id, video_path, remote_url))
+            v.id, repository_path, repository_url))
 
     return return_value
 
 
 def add_one_manifest_to_database(full_path,
-                                 video_path,
-                                 root,
-                                 remote_url,
+                                 repository_path,
+                                 repository_url,
                                  filename,
                                  keep_files=False):
     """ # create infos in the database for one manifest
 
         Args:
         full_path: absolue path to the video
-        video_path: relative (to root) basepath (ie directory) containing video
+        repository_path: relative (to root) basepath (ie directory) containing video
         root: absolute path to directory containing all the videos
-        remote_url: baseurl for video access on the server
+        repository_url: baseurl for video access on the server
         keep_files: Keep files in case of convertion
 
         return 0 if noseries/movies was created, 1 if a movies was created, 2 if a series was created
 
     """
-    # Print current working directory
-    print("Current working dir : %s" % root)
+
     video_infos = []
     fileinfos_path = "{}/fileinfo.json".format(os.path.split(full_path)[0])
     if os.path.isfile(fileinfos_path):
@@ -281,7 +273,7 @@ def add_one_manifest_to_database(full_path,
 
         #we use oncommit because autocommit is not enabled.
         transaction.on_commit(lambda: get_subtitles_async.delay(
-            v.id, video_path, remote_url))
+            v.id, repository_path, repository_url))
 
     return return_value
 
@@ -294,8 +286,7 @@ def populate_db_from_remote_server(remotePath, ListOfVideos):
 
 
 @shared_task
-def update_db_from_local_folder_async(keep_files):
-    update_db_from_local_folder(settings.VIDEO_ROOT, settings.VIDEO_URL, keep_files)
-    update_db_from_local_folder("/usr/torrent/", "/torrents/", keep_files)
+def update_db_from_local_folder_async(keep_files=True):
+    update_db_from_local_folder("/usr/torrent/", settings.VIDEO_ROOT, settings.VIDEO_URL, keep_files)
     cache.set("is_updating", "false", timeout=None)
     return 0

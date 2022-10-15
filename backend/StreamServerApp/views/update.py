@@ -17,13 +17,13 @@ class RestUpdate(APIView):
             traceback.print_exception(type(ex), ex, ex.__traceback__)
             return Response({}, status=status.HTTP_401_UNAUTHORIZED)
 
-        keep_files = False
+        keep_files = True
         try:
             print(request.data["headers"]["keep_files"])
-            if (request.data["headers"]["keep_files"]):
-                keep_files = True
+            if ("false" == request.data["headers"]["keep_files"]):
+                keep_files = False
         except Exception as ex:
-            keep_files = False
+            keep_files = True
 
         dryrun = False
         try:
