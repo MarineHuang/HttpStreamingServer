@@ -35,8 +35,7 @@ else:
     DEBUG = True
     VERBOSE_OUTPUT = True
     ALLOWED_HOSTS.append(os.getenv('HTTPSTREAMING_HOST', ''))
-    VIDEO_URL = '/Videos/'
-    STATICFILES_DIRS = (os.path.join(BASE_DIR, '../frontend/build/static/'),)
+    VIDEO_URL = 'http://{}/Videos/'.format(os.getenv('HTTPSTREAMING_HOST', ''))
     INTERNAL_IPS = ['127.0.0.1']
 
     # Normally django debug toolbar uses `INTERNAL_IPS` to check if it should show, but in
