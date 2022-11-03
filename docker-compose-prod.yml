@@ -4,7 +4,6 @@ volumes:
   dbvolume:
   ipython:
   static_volume:
-  torrent:
 
 services:
   db:
@@ -34,7 +33,7 @@ services:
       - ./Videos/:/usr/src/app/Videos
       - static_volume:/usr/static/
       - ipython:/root/.ipython
-      - torrent:/usr/torrent/:rw
+      - /home/important_data/torrent:/usr/torrent/:rw
     command: bash -c "service transmission-daemon start && python3 /usr/src/app/manage.py collectstatic --no-input && gunicorn StreamingServer.wsgi:application --bind 0.0.0.0:8000"
     depends_on:
       - db
@@ -45,7 +44,7 @@ services:
     volumes:
       - ./Videos/:/usr/src/app/Videos
       - static_volume:/usr/static/
-      - torrent:/usr/torrent/:rw
+      - /home/important_data/torrent:/usr/torrent/:rw
     ports:
       - 80:80
     depends_on:
@@ -58,7 +57,23 @@ services:
     command: celery -A StreamingServer worker -l info
     volumes:
         - ./Videos/:/usr/src/app/Videos
-        - torrent:/usr/torrent/:rw
+        - /home/important_data/torrent:/usr/torrent/:rw
+    env_file:
+        - .env
+    environment:
+      - DEPLOY_ENV=production
+    depends_on:
+        - db
+        - redis
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile.prod
+    command: celery -A StreamingServer beat -l info
+    volumes:
+        - ./Videos/:/usr/src/app/Videos
+        - /home/important_data/torrent:/usr/torrent/:rw
     env_file:
         - .env
     environment:

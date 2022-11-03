@@ -4,7 +4,6 @@ volumes:
   dbvolume:
   ipython:
   static_volume:
-  torrent:
   node_modules:
 
 services:
@@ -28,6 +27,7 @@ services:
       - .env
     environment:
       - DEPLOY_ENV=DEBUG
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - HTTPSTREAMING_HOST=${HTTPSTREAMING_HOST}
     volumes:
       - ./backend/:/usr/src/app/
@@ -35,7 +35,7 @@ services:
       - static_volume:/usr/src/app/staticfiles
       - /static/
       - ipython:/root/.ipython
-      - torrent:/usr/torrent/:rw
+      - /home/important_data/torrent:/usr/torrent/:rw
     command: bash -c "./wait-for-it.sh db:5432 -- python3 /usr/src/app/manage.py runserver 0.0.0.0:8000"
     depends_on:
       - db
@@ -48,7 +48,7 @@ services:
       - ./Videos/:/usr/src/app/Videos
       - ./nginx/nginx.conf /etc/nginx/conf.d/nginx.conf
       - static_volume:/usr/src/app/staticfiles
-      - torrent:/usr/torrent/:rw
+      - /home/important_data/torrent:/usr/torrent/:rw
     ports:
       - 80:80
     depends_on:
@@ -71,11 +71,26 @@ services:
     build:
       context: .
       dockerfile: ./backend/Dockerfile
-    command: celery -A StreamingServer worker -l info
+    command: celery -A StreamingServer worker -l info --logfile=/usr/src/app/celery.worker.log
     volumes:
         - ./backend/:/usr/src/app/
         - ./Videos/:/usr/src/app/Videos
-        - torrent:/usr/torrent/:rw
+        - /home/important_data/torrent:/usr/torrent/:rw
+    env_file:
+        - .env
+    depends_on:
+        - db
+        - redis
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    command: celery -A StreamingServer beat -l info --logfile=/usr/src/app/celery.beat.log
+    volumes:
+      - ./backend/:/usr/src/app/
+      - ./Videos/:/usr/src/app/Videos
+      - /home/important_data/torrent:/usr/torrent/:rw
     env_file:
         - .env
     depends_on:

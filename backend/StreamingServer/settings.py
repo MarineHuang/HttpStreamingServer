@@ -15,6 +15,7 @@ import dj_database_url
 import subprocess
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
+from celery.schedules import crontab
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -61,7 +62,8 @@ else:
         'debug_toolbar.panels.profiling.ProfilingPanel'
     ]
 
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', '')
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'qwertyuio')
+print("SECRET_KEY is: {}".format(SECRET_KEY))
 
 
 VIDEO_ROOT = os.path.join(BASE_DIR, 'Videos/')
@@ -205,11 +207,20 @@ if sentry_dsn:
     )
 
 # celery
+CELERY_TIMEZONE = "Asia/Shanghai"
+CELERY_ENABLE_UTC = False
 CELERY_BROKER_URL = 'redis://redis:6380'
 CELERY_RESULT_BACKEND = 'redis://redis:6380'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_SERIALIZER = 'json'
+
+CELERY_BEAT_SCHEDULE = {
+    "sync_video": {
+        "task": "StreamServerApp.tasks.sync_video",
+        "schedule": crontab(minute="*/1"),
+    },
+}
 
 CACHES = {
     "default": {
