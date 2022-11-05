@@ -1,6 +1,6 @@
 
 FROM jrottenberg/ffmpeg:4.4-ubuntu2004
-ENV TZ=Europe/Paris
+ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt-get update -y && apt-get install -y transmission-daemon build-essential pkg-config git zlib1g-dev python3-pip
