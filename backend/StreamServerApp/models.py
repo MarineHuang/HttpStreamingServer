@@ -105,8 +105,10 @@ class Video(models.Model):
             print("{} is not a file ".format(fileinfos_path))
             return 0
 
-        print("get sub for {}".format(video_infos["video_full_path"]))
-        subtitles_list = get_subtitles(video_infos["video_full_path"])
+        print("try to get subtitle for {}".format(video_infos["video_full_path"]))
+        subtitles_list = get_subtitles(video_infos["video_full_path"], 
+            video_folder=os.path.split(self.video_folder)[0]
+        )
 
         webvtt_subtitles_full_path = subtitles_list[0]
         srt_subtitles_full_path = subtitles_list[1]
@@ -126,6 +128,7 @@ class Video(models.Model):
                     remote_url, webvtt_subtitles_relative_path)
                 newsub.language = language_str
                 newsub.save()
+                print("get subtitle success for {}".format(video_infos["video_full_path"]))
 
     def __str__(self):
         return '{}'.format(self.name)

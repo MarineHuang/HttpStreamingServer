@@ -2,6 +2,7 @@ import os
 from babelfish import Language
 from subliminal import Video, subtitle, region, download_best_subtitles, save_subtitles
 import io
+from django.conf import settings
 
 from StreamServerApp.media_processing import extract_subtitle, convert_subtitles_to_webvtt
 
@@ -65,7 +66,7 @@ def handle_subliminal_download(video, video_path, languages_to_retrieve):
     return webvtt_subtitles_returned, srt_subtitles_returned
 
 
-def get_subtitles(video_path):
+def get_subtitles(video_path, video_folder=None):
     """ # get subtitles and convert them to web vtt
         Args:
         video_path: absolute path to videos
@@ -77,17 +78,40 @@ def get_subtitles(video_path):
     }
     webvtt_fullpath = {}
     srt_fullpath = {}
+    
+    # step1: try search subtitle from local disk
+    video_filename, video_ext = os.path.splitext(os.path.basename(video_path))
 
-    try:
-        video = Video.fromname(video_path)
-        try:
-            webvtt_fullpath, srt_fullpath = handle_subliminal_download(
-                video, video_path, languages_to_retrieve)
-        except:
-            webvtt_fullpath = {}
-            srt_fullpath = {}
-    except ValueError:
-        #This usually happens when there is not enough data for subliminal to guess
-        pass
+    for root, _, files in os.walk("/usr/torrent/"):
+        for f in files:
+            if f.startswith(video_filename) \
+               and f.endswith('.srt'):
+                srt_file_path = os.path.join(root, f)
+                srt_fullpath['eng'] = srt_file_path
+                
+                webvtt_file_name = os.path.splitext(os.path.basename(srt_file_path))[0] + '.vtt'
+                
+                if video_folder is None:
+                    webvtt_file_path = os.path.join(settings.VIDEO_ROOT, webvtt_file_name)
+                else:
+                    webvtt_file_path = os.path.join(video_folder, webvtt_file_name)
+                
+                convert_subtitles_to_webvtt(srt_file_path, webvtt_file_path)
+                webvtt_fullpath['eng'] = webvtt_file_path
+
+                return [webvtt_fullpath, srt_fullpath]
+
+    # step2: try download subtitle from subliminal
+    #try:
+    #    video = Video.fromname(video_path)
+    #    try:
+    #        webvtt_fullpath, srt_fullpath = handle_subliminal_download(
+    #            video, video_path, languages_to_retrieve)
+    #    except:
+    #        webvtt_fullpath = {}
+    #        srt_fullpath = {}
+    #except ValueError:
+    #    #This usually happens when there is not enough data for subliminal to guess
+    #    pass
 
     return [webvtt_fullpath, srt_fullpath]

@@ -393,7 +393,7 @@ def skip_if_running(f):
 @skip_if_running
 def sync_videos(self):
     cookies=""
-    remote_urls=["/shared/"]
+    remote_urls=["/subtitle/"]
 
     try:
         panClient = BaiduPcsClient(cookies, remote_urls)
