@@ -217,7 +217,7 @@ CELERY_TASK_SERIALIZER = 'json'
 
 CELERY_BEAT_SCHEDULE = {
     "sync_videos": {
-        "task": "StreamServerApp.tasks.sync_videos",
+        "task": "StreamServerApp.database_utils.sync_videos",
         "schedule": crontab(minute="*/1"),
     },
 }

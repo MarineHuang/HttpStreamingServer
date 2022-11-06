@@ -7,14 +7,14 @@ Todo:
     * Define how to interact with multiple servers
 """
 import os
-
-from os.path import isfile, join
-
+from functools import wraps
 import traceback
 
-from django.db import transaction
-
 from celery import shared_task
+from celery.utils.log import get_task_logger
+logger = get_task_logger(__name__)
+
+from django.db import transaction
 from django.core.cache import cache
 
 from StreamServerApp.models import Video, Series, Movie, Subtitle
@@ -23,8 +23,11 @@ from StreamServerApp.subtitles import init_cache
 from StreamServerApp.media_management.fileinfo import createfileinfo, readfileinfo
 from StreamServerApp.media_processing import prepare_video, get_video_type_and_info
 from StreamServerApp.tasks import get_subtitles_async
-from StreamingServer import settings
+from StreamingServer import settings as AppSettings
 
+from baidupcs_py.baidupcs import BaiduPCSApi
+from baidupcs_py.commands.download import download_file, Downloader, DownloadParams
+#from baidupcs_py.commands.list_files import list_files as BaiduListFiles
 
 def delete_DB_Infos():
     """ delete all videos, movies and series in the db
@@ -82,7 +85,7 @@ def update_db_from_local_folder(scan_path, repository_path, repository_url, keep
                 print(full_path + " is already in db, skip it")
                 continue
 
-            if isfile(full_path) and (full_path.endswith(".mp4")
+            if os.path.isfile(full_path) and (full_path.endswith(".mp4")
                                       or full_path.endswith(".mkv")
                                       or full_path.endswith(".avi")):
                 try:
@@ -100,7 +103,7 @@ def update_db_from_local_folder(scan_path, repository_path, repository_url, keep
                     print("An error occured")
                     traceback.print_exception(type(ex), ex, ex.__traceback__)
                     continue
-            elif isfile(full_path) and (full_path.endswith(".mpd")):
+            elif os.path.isfile(full_path) and (full_path.endswith(".mpd")):
                 try:
                     # Atomic transaction in order to make all occur or nothing occurs in case of exception raised
                     with transaction.atomic():
@@ -287,6 +290,123 @@ def populate_db_from_remote_server(remotePath, ListOfVideos):
 
 @shared_task
 def update_db_from_local_folder_async(keep_files=True):
-    update_db_from_local_folder("/usr/torrent/", settings.VIDEO_ROOT, settings.VIDEO_URL, keep_files)
+    update_db_from_local_folder(
+        scan_path="/usr/torrent/", 
+        repository_path=AppSettings.VIDEO_ROOT, 
+        repository_url=AppSettings.VIDEO_URL, 
+        keep_files=True)
     cache.set("is_updating", "false", timeout=None)
+    return 0
+
+
+
+class BaiduPcsClient():
+    def __init__(self, cookies: str, remote_urls: list):
+        
+        self.cookies = dict([c.split("=", 1) for c in cookies.split("; ")])
+        self.bduss = self.cookies.get("BDUSS")
+        self.api = BaiduPCSApi(bduss=self.bduss, cookies=self.cookies)
+        self.remote_urls = remote_urls
+        self.destination_dir = "/usr/torrent/"
+
+    def list_files(self, remote_url):
+        '''
+        return network pan's file, only file, not include directory
+        '''
+        pcs_files = []
+        for pcs_file in self.api.list(remote_url):
+            if pcs_file.is_dir:
+                pcs_files.extend(self.list_files(pcs_file.path))
+            else:
+                pcs_files.append(pcs_file)
+        
+        return pcs_files
+
+    def walk(self):
+        all_files = []
+        for remote_url in self.remote_urls:
+            all_files.extend(self.list_files(remote_url))
+        return all_files
+
+
+    def sync_videos(self):
+        all_files = self.walk()
+
+        downloaded_files=[]
+        for pcs_file in all_files:
+            file_name = os.path.basename(pcs_file.path)
+            if not os.path.exists(os.path.join(self.destination_dir, file_name)) \
+                and (file_name.endswith(".mp4")
+                     or file_name.endswith(".mkv")
+                     or file_name.endswith(".avi")
+                     or file_name.endswith(".srt")
+                     or file_name.endswith(".ass")
+                     or file_name.endswith(".vtt")):
+                print("begin to download: {}".format(pcs_file.path))
+                try:
+                    download_file(
+                        api=self.api, 
+                        remotepath=pcs_file.path,
+                        localdir=self.destination_dir,
+                        downloader=Downloader.aget_py,
+                        downloadparams=DownloadParams(
+                            concurrency=5, 
+                            chunk_size=str(50 * 1024 * 1024), 
+                            quiet=False),
+                        out_cmd = False,
+                        )
+                    print("download success: {}".format(pcs_file.path))
+                    downloaded_files.append(os.path.join(self.destination_dir, file_name))
+                except Exception as e:
+                    print("error occurs when downloading {}".format(pcs_file.path))
+                    raise e
+
+        return downloaded_files
+
+
+
+
+
+def skip_if_running(f):
+    task_name = f'{f.__module__}.{f.__name__}'
+
+    @wraps(f)
+    def wrapped(self, *args, **kwargs):
+        workers = self.app.control.inspect().active()
+
+        for worker, tasks in workers.items():
+            for task in tasks:
+                if (task_name == task['name'] and
+                        tuple(args) == tuple(task['args']) and
+                        kwargs == task['kwargs'] and
+                        self.request.id != task['id']):
+                    
+                    print(f'task {task_name} ({args}, {kwargs}) is running on {worker}, skipping')
+                    return None
+
+        return f(self, *args, **kwargs)
+
+    return wrapped
+
+
+@shared_task(bind=True)
+@skip_if_running
+def sync_videos(self):
+    cookies=""
+    remote_urls=["/shared/"]
+
+    try:
+        panClient = BaiduPcsClient(cookies, remote_urls)
+        ret = panClient.sync_videos()
+        logger.info("sync videos success: {}".format(ret))
+        if len(ret) > 0:
+            update_db_from_local_folder(
+                scan_path="/usr/torrent/", 
+                repository_path=AppSettings.VIDEO_ROOT, 
+                repository_url=AppSettings.VIDEO_URL, 
+                keep_files=True)
+            cache.set("is_updating", "false", timeout=None)
+    except Exception as e:
+        logger.error("error occurs when sync videos: {}".format(e))
+
     return 0

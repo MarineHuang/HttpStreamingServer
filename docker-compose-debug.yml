@@ -82,7 +82,7 @@ services:
         - db
         - redis
 
-  celery-beat:
+  celery_beat:
     build:
       context: .
       dockerfile: ./backend/Dockerfile
