@@ -351,7 +351,7 @@ class BaiduPcsClient():
                         downloader=Downloader.aget_py,
                         downloadparams=DownloadParams(
                             concurrency=5, 
-                            chunk_size=str(50 * 1024 * 1024), 
+                            chunk_size=str(1 * 1024 * 1024), 
                             quiet=False),
                         out_cmd = False,
                         )
