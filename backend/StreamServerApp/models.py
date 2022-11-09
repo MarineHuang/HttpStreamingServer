@@ -56,6 +56,7 @@ class Video(models.Model):
     video_url = models.CharField(max_length=300, default="")
     video_folder = models.CharField(max_length=300, default="")
     thumbnail = models.CharField(max_length=300, default="")
+    origin_path = models.CharField(max_length=300, default="")
 
     # Relations to series and movies
     # on_delete=SET_NULL keeps videos indexed if we remove a serie or a video it belongs to

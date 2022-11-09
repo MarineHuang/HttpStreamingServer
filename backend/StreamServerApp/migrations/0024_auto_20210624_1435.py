@@ -36,4 +36,9 @@ class Migration(migrations.Migration):
             name='series',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='StreamServerApp.Series'),
         ),
+        migrations.AddField(
+            model_name='video',
+            name='origin_path',
+            field=models.CharField(default='', max_length=300),
+        ),
     ]

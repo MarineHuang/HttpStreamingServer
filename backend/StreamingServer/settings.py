@@ -23,6 +23,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 STATIC_URL = '/static/'
 STATIC_ROOT = '/usr/static/'
+FILE_STORAGE = '/usr/torrent/'
+VIDEO_ROOT = os.path.join(BASE_DIR, 'Videos/')
 
 ALLOWED_HOSTS = ['web', 'localhost']
 
@@ -66,7 +68,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'qwertyuio')
 print("SECRET_KEY is: {}".format(SECRET_KEY))
 
 
-VIDEO_ROOT = os.path.join(BASE_DIR, 'Videos/')
+
 
 
 if VERBOSE_OUTPUT:
@@ -217,7 +219,7 @@ CELERY_TASK_SERIALIZER = 'json'
 
 CELERY_BEAT_SCHEDULE = {
     "sync_videos": {
-        "task": "StreamServerApp.database_utils.sync_videos",
+        "task": "StreamServerApp.tasks.sync_videos",
         "schedule": crontab(minute="*/1"),
     },
 }
