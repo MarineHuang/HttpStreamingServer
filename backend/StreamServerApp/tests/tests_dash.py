@@ -1,6 +1,6 @@
 from django.test import Client, TestCase
 from StreamServerApp.media_management.frame_analyzer import keyframe_analysis
-from StreamServerApp.media_management.encoder import h264_encoder, aac_encoder
+from backend.StreamServerApp.media_management.processing import h264_encoder, aac_encoder
 from StreamServerApp.media_management.dash_packager import dash_packager
 from clint.textui import progress
 import os

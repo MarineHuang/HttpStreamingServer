@@ -2,7 +2,7 @@ import os
 from babelfish import Language
 from subliminal import Video, subtitle, region, download_best_subtitles, save_subtitles
 import io
-from django.conf import settings
+from StreamingServer import settings
 
 from StreamServerApp.media_processing import extract_subtitle, convert_subtitles_to_webvtt
 
@@ -72,6 +72,7 @@ def get_subtitles(video_path, video_folder=None):
         video_path: absolute path to videos
         return: empty string if no subtitles was found. Otherwise return dict of subtitle absolute location with str(Language) as key
     """
+    print("get_subtitle function: video_path={}, video_folder={}".format(video_path, video_folder))
     languages_to_retrieve = {
         'eng',
         'fra',
@@ -82,10 +83,10 @@ def get_subtitles(video_path, video_folder=None):
     # step1: try search subtitle from local disk
     video_filename, video_ext = os.path.splitext(os.path.basename(video_path))
 
-    for root, _, files in os.walk("/usr/torrent/"):
+    for root, _, files in os.walk(settings.FILE_STORAGE):
         for f in files:
             if f.startswith(video_filename) \
-               and f.endswith('.srt'):
+               and (f.endswith('.srt') or f.endswith(".ass")):
                 srt_file_path = os.path.join(root, f)
                 srt_fullpath['eng'] = srt_file_path
                 

@@ -36,7 +36,7 @@ if os.getenv('DEPLOY_ENV', 'dev') == 'production':
     STATICFILES_DIRS = (os.path.join(BASE_DIR, '../frontend/build/static/'),)
 else:
     DEBUG = True
-    VERBOSE_OUTPUT = True
+    VERBOSE_OUTPUT = False
     ALLOWED_HOSTS.append(os.getenv('HTTPSTREAMING_HOST', ''))
     VIDEO_URL = 'http://{}/Videos/'.format(os.getenv('HTTPSTREAMING_HOST', ''))
     INTERNAL_IPS = ['127.0.0.1']
@@ -76,7 +76,7 @@ if VERBOSE_OUTPUT:
     customstderr = subprocess.PIPE
 else:
     customstdout = subprocess.DEVNULL
-    customstderr = subprocess.DEVNULL
+    customstderr = subprocess.PIPE
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/

@@ -6,7 +6,6 @@ import uuid
 import traceback
 from typing import Optional, List, Dict, Any, Callable
 from types import SimpleNamespace
-from rich import print
 
 from django.db import transaction
 from StreamingServer import settings
@@ -16,6 +15,10 @@ from StreamServerApp.database_utils import add_one_video_to_database
 from baidupcs_py.baidupcs import BaiduPCSApi, PCS_UA
 from baidupcs_py.utils import human_size_to_int
 #from baidupcs_py.commands.list_files import list_files as BaiduListFiles
+
+def file_rename(src_name):
+    dst_name = src_name.replace(' ', '_')
+    return dst_name
 
 class DownloadParams(SimpleNamespace):
     concurrency: int = 5
@@ -87,8 +90,9 @@ class BaiduPcsClient():
             print("get download link failed for : {}".format(remote_path))
             return None
         
-        file_extension = os.path.splitext(os.path.basename(remote_path))[1]
-        download_filename =  "{}{}".format(str(uuid.uuid1()), file_extension)
+        #file_extension = os.path.splitext(os.path.basename(remote_path))[1]
+        #download_filename =  "{}{}".format(str(uuid.uuid1()), file_extension)
+        download_filename = file_rename(os.path.basename(remote_path))
         local_path = os.path.join(self.destination_dir, download_filename)
         localpath_tmp = local_path + ".tmp"
         print(f"[italic blue]Download[/italic blue]: {remote_path} to {local_path}")
@@ -112,7 +116,7 @@ class BaiduPcsClient():
         #first download subtitle file
         for pcs_file in all_files:
             file_name = os.path.basename(pcs_file.path)
-            if not os.path.exists(os.path.join(self.destination_dir, file_name)) \
+            if not os.path.exists(os.path.join(self.destination_dir, file_rename(file_name))) \
                 and (file_name.endswith(".srt")
                      or file_name.endswith(".ass")
                      or file_name.endswith(".vtt")):
@@ -129,7 +133,7 @@ class BaiduPcsClient():
         # then download video file
         for pcs_file in all_files:
             file_name = os.path.basename(pcs_file.path)
-            if not os.path.exists(os.path.join(self.destination_dir, file_name)) \
+            if not os.path.exists(os.path.join(self.destination_dir, file_rename(file_name))) \
                 and (file_name.endswith(".mp4")
                      or file_name.endswith(".mkv")
                      or file_name.endswith(".avi")):

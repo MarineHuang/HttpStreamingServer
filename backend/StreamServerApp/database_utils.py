@@ -10,12 +10,18 @@ import os
 import traceback
 
 from django.db import transaction
+from celery import shared_task
 from StreamServerApp.models import Video, Series, Movie, Subtitle
 from StreamServerApp.subtitles import init_cache
 
 from StreamServerApp.media_management.fileinfo import createfileinfo, readfileinfo
 from StreamServerApp.media_processing import prepare_video, get_video_type_and_info
 
+
+@shared_task
+def get_subtitles_async(video_id, video_path, remote_url):
+    video = Video.objects.get(id=video_id)
+    video.get_subtitles(video_path, remote_url)
 
 def delete_DB_Infos():
     """ delete all videos, movies and series in the db
@@ -187,7 +193,9 @@ def add_one_video_to_database(full_path,
             ov_sub.save()
 
         #we use oncommit because autocommit is not enabled.
-        transaction.on_commit(lambda: v.get_subtitles(repository_path, repository_url))
+        transaction.on_commit(lambda: get_subtitles_async.delay(
+            v.id, repository_path, repository_url))
+        #transaction.on_commit(lambda: v.get_subtitles(repository_path, repository_url))
 
     return return_value
 
@@ -264,7 +272,9 @@ def add_one_manifest_to_database(full_path,
         v.save()
         
         #we use oncommit because autocommit is not enabled.
-        transaction.on_commit(lambda: v.get_subtitles(repository_path, repository_url))
+        transaction.on_commit(lambda: get_subtitles_async.delay(
+            v.id, repository_path, repository_url))
+        #transaction.on_commit(lambda: v.get_subtitles(repository_path, repository_url))
 
     return return_value
 

@@ -1,106 +1,16 @@
 import os
 import subprocess
 import json
-from StreamingServer.settings import customstderr, customstdout
+
 import re
-import subliminal
-import ffmpeg
 import sys
 import string
 import datetime
-from StreamServerApp.media_management.encoder import h264_encoder, aac_encoder, extract_audio
+import ffmpeg
+import subliminal
+from StreamServerApp.media_management.processing import *
 from StreamServerApp.media_management.dash_packager import dash_packager
 from StreamServerApp.media_management.fileinfo import createfileinfo, readfileinfo
-
-
-def run_ffmpeg_process(cmd):
-    completed_process_instance = subprocess.run(cmd, stdout=customstdout,
-                                            stderr=customstderr)
-    if completed_process_instance.returncode != 0:
-        print("An error occured while running ffmpeg subprocess")
-        print(completed_process_instance.stderr)
-        print(completed_process_instance.stdout)
-        raise Exception('ffmpeg_error', 'error')
-
-
-def convert_subtitles_to_webvtt(input_file, output_file):
-    """ # Uses ffmpeg subprocess to convert subtitles to webvtt
-    
-    Args:
-    input_file: full path to the input subtitle (eg: /Videos/folder1/sub.srt)
-    output_file: full path to the output webvtt file (eg: /Videos/folder1/sub.vtt)
-
-    Returns: void
-
-    Throw an exception if the return value of the subprocess is different than 0
-
-    """
-    cmd = ["ffmpeg", "-n", "-sub_charenc", "UTF-8", "-i", input_file, output_file]
-    if not os.path.isfile(output_file):
-        run_ffmpeg_process(cmd)
-
-
-def extract_subtitle(input_file, output_file, subtitle_index = 0):
-    """ # Uses ffmpeg subprocess to extract subtitles from a video and convert it to webvtt
-    
-    Args:
-    input_file: full path to the input video (eg: /Videos/folder1/video.mp4)
-    output_file: full path to the output webvtt file (eg: /Videos/folder1/sub.vtt)
-    subtitle_index: subtitle track index to extract
-
-    Returns: void
-
-    Throw an exception if the return value of the subprocess is different than 0
-
-    """
-    cmd = ["ffmpeg", "-n", "-sub_charenc", "UTF-8", "-i", input_file, "-map", "0:s:{}".format(subtitle_index), output_file]
-    if not os.path.isfile(output_file):
-        run_ffmpeg_process(cmd)
-
-
-def transmux_to_mp4(input_file, output_file, with_audio_reencode=False):
-    """ # Uses ffmpeg subprocess to transmux to mp4
-    
-    Args:
-    input_file: full path to the input video (eg: /Videos/folder1/video.mp4)
-    output_file: full path to the output video (eg: /Videos/folder1/video.mp4)
-
-    Returns: void
-
-    Throw an exception if the return value of the subprocess is different than 0
-
-    """
-    if with_audio_reencode:
-        print(
-            "Audio codec is not aac, audio reencoding is necessary (This might take a long time)")
-        cmd = ["ffmpeg", "-i", input_file,
-                "-acodec", "aac", "-vcodec", "copy", "-movflags", "+faststart", output_file]
-    else:
-        cmd = ["ffmpeg", "-i", input_file,
-                "-codec", "copy", "-movflags", "+faststart", output_file]
-
-    if not os.path.isfile(output_file):
-        run_ffmpeg_process(cmd)
-
-
-def generate_thumbnail(input_file, duration, output_file):
-    """ # Uses ffmpeg subprocess to extract a thumbnail from a video
-    
-    Args:
-    input_file: full path to the input video (eg: /Videos/folder1/video.mp4)
-    duration: Video duration (in seconds). The thumbnail is taken at half the movies duration
-     (to avoid black screen at the beginning or the end).
-    output_file: full path to the output thumbnail file (eg: /Videos/folder1/thumb.jpeg)
-
-    Returns: void
-
-    Throw an exception if the return value of the subprocess is different than 0
-
-    """
-    cmd = ["ffmpeg", "-ss", str(duration/2.0), "-i", input_file, "-an", "-vf", "scale=320:-1",
-                            "-vframes", "1", output_file]
-    if not os.path.isfile(output_file):
-        run_ffmpeg_process(cmd)
 
 
 def prepare_video(video_full_path,
@@ -197,8 +107,8 @@ def prepare_video(video_full_path,
     #https://stackoverflow.com/questions/5024114/suggested-compression-ratio-with-h-264
     high_layer_compression_ratio = int(
         os.getenv('HIGH_LAYER_COMPRESSION_RATIO_IN_PERCENTAGE', 7))
-    high_layer_bitrate = video_width * video_height * \
-        24 * 4 * (high_layer_compression_ratio/100.0)
+    high_layer_bitrate = int(video_width * video_height * \
+        24 * 4 * (high_layer_compression_ratio/100.0))
     print("high_layer_bitrate = {}".format(high_layer_bitrate))
     low_layer_bitrate = int(os.getenv('480P_LAYER_BITRATE', 400000))
     low_layer_height = int(video_height / 2.0)

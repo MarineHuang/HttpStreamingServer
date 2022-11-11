@@ -26,7 +26,7 @@ services:
     env_file:
       - .env
     environment:
-      - DEPLOY_ENV=DEBUG
+      - DEPLOY_ENV=dev
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - HTTPSTREAMING_HOST=${HTTPSTREAMING_HOST}
     volumes:
@@ -71,7 +71,7 @@ services:
     build:
       context: .
       dockerfile: ./backend/Dockerfile
-    command: celery -A StreamingServer worker -l info --logfile=/usr/src/app/celery.worker.log
+    command: celery -A StreamingServer worker -l info
     volumes:
         - ./backend/:/usr/src/app/
         - ./Videos/:/usr/src/app/Videos
@@ -86,7 +86,7 @@ services:
     build:
       context: .
       dockerfile: ./backend/Dockerfile
-    command: celery -A StreamingServer beat -l info --logfile=/usr/src/app/celery.beat.log
+    command: celery -A StreamingServer beat -l info
     volumes:
       - ./backend/:/usr/src/app/
       - ./Videos/:/usr/src/app/Videos

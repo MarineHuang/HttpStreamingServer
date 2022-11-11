@@ -12,7 +12,7 @@ from rest_framework.test import APIClient
 from StreamServerApp.database_utils import get_num_videos
 from StreamServerApp.models import Video, Series, Movie, UserVideoHistory, Subtitle
 from StreamServerApp.media_processing import extract_subtitle, generate_thumbnail
-from StreamServerApp.media_management.encoder import h264_encoder
+from backend.StreamServerApp.media_management.processing import h264_encoder
 from StreamServerApp.media_processing import get_video_type_and_info
 
 
