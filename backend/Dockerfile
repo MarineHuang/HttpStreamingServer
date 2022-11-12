@@ -15,7 +15,7 @@ ENV PYTHONUNBUFFERED 1
 #COPY ./backend/ /usr/src/app/
 #WORKDIR /usr/src/app
 ADD ./backend/requirements.txt /srv/requirements.txt
-RUN pip3 install -r /srv/requirements.txt
+RUN pip3 install -r /srv/requirements.txt -i http://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
 
 WORKDIR /usr/src/app
 
