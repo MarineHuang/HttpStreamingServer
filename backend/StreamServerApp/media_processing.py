@@ -11,7 +11,7 @@ import subliminal
 from StreamServerApp.media_management.processing import *
 from StreamServerApp.media_management.dash_packager import dash_packager
 from StreamServerApp.media_management.fileinfo import createfileinfo, readfileinfo
-
+from StreamingServer import settings
 
 def prepare_video(video_full_path,
                   repository_local_path,
@@ -153,6 +153,8 @@ def prepare_video(video_full_path,
     thumbnail_fullpath = "{}/thumbnail.jpeg".format(dash_output_directory)
     if video_stream:
         generate_thumbnail(video_full_path, duration, thumbnail_fullpath)
+    else:
+        thumbnail_fullpath = "{}/default_thumbnail.jpeg".format(settings.VIDEO_ROOT)
     
     # Dash_packaging
     mpd_full_path = "{}/playlist.mpd".format(dash_output_directory)
