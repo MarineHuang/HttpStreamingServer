@@ -46,11 +46,10 @@ class Series(CommonInfo):
 
 
 class Video(models.Model):
-
     name = models.CharField(max_length=200)
-    video_codec = models.CharField(max_length=100, default="")
     height = models.IntegerField(default=0)
     width = models.IntegerField(default=0)
+    video_codec = models.CharField(max_length=100, default="")
     audio_codec = models.CharField(max_length=100, default="")
     metadata = models.CharField(max_length=100, blank=True, default="")
     video_url = models.CharField(max_length=300, default="")
@@ -186,3 +185,5 @@ class Subtitle(models.Model):
 
     def __str__(self):
         return '{} {}'.format(self.language, self.webvtt_subtitle_url)
+
+

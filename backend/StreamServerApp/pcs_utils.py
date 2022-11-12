@@ -136,7 +136,10 @@ class BaiduPcsClient():
             if not os.path.exists(os.path.join(self.destination_dir, file_rename(file_name))) \
                 and (file_name.endswith(".mp4")
                      or file_name.endswith(".mkv")
-                     or file_name.endswith(".avi")):
+                     or file_name.endswith(".avi")
+                     or file_name.endswith(".mp3")
+                     or file_name.endswith(".aac")
+                     or file_name.endswith(".m4a")):
                 print("begin to download: {}".format(pcs_file.path))
                 try:
                     local_path = self.download_file(remote_path=pcs_file.path)

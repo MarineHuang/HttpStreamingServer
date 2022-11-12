@@ -37,7 +37,9 @@ def prepare_video(video_full_path,
         datetime.datetime.now().strftime('%Y-%m-%d'),
         video_file_name_wo_ext
     )
-    if not os.path.exists(dash_output_directory):
+    if os.path.exists(dash_output_directory):
+        raise Exception("dash directory is exists: {}".format(dash_output_directory))
+    else:
         os.makedirs(dash_output_directory)
     
     try:
@@ -46,23 +48,22 @@ def prepare_video(video_full_path,
         print(e.stderr, file=sys.stderr)
         raise
 
-    video_stream = next(
-        (stream
-         for stream in probe['streams'] if stream['codec_type'] == 'video'),
-        None)
-    if video_stream is None:
-        print('No video stream found', file=sys.stderr)
-        return {}
-
-    video_codec_type = video_stream['codec_name']
-    video_width = video_stream['width']
-    video_height = video_stream['height']
-
-    if 'duration' in video_stream:
-        duration = float(video_stream['duration'])
-    elif 'duration' in probe['format']:
+    if 'duration' in probe['format']:
         duration = float(probe['format']['duration'])
-
+    
+    video_height=0
+    video_width=0
+    video_codec_type=""
+    audio_codec_type=""
+    low_layer_bitrate=None
+    low_layer_height=None
+    high_layer_bitrate=None 
+    high_layer_height=None
+    video_elementary_stream_path_high_layer=None
+    video_elementary_stream_path_low_layer=None
+    audio_elementary_stream_path=None
+    
+    # audio stream
     audio_stream = next(
         (stream
          for stream in probe['streams'] if stream['codec_type'] == 'audio'),
@@ -70,96 +71,121 @@ def prepare_video(video_full_path,
     if audio_stream is None:
         #At the moment, if the input video has no audio, it's not added to the database.
         print('No audio stream found', file=sys.stderr)
-        return {}
+    else:
+        if 'duration' in audio_stream:
+            duration = float(audio_stream['duration'])
 
+        audio_elementary_stream_path = os.path.join(dash_output_directory,
+            "{}.m4a".format(video_file_name_wo_ext)
+        )
+
+        audio_codec_type = audio_stream['codec_name']
+        if "aac" in audio_codec_type:
+            extract_audio(video_full_path, audio_elementary_stream_path)
+        else:
+            aac_encoder(video_full_path, audio_elementary_stream_path)
+    
+    # video stream
+    video_stream = next(
+        (stream
+         for stream in probe['streams'] if stream['codec_type'] == 'video'),
+        None)
+    if video_stream is None:
+        print('No video stream found', file=sys.stderr)
+    else:
+        video_codec_type = video_stream['codec_name']
+        video_width = video_stream['width']
+        video_height = video_stream['height']
+
+        if 'duration' in video_stream:
+            duration = float(video_stream['duration'])
+
+        video_elementary_stream_path_high_layer = os.path.join(dash_output_directory,
+            "{}_{}.264".format(video_file_name_wo_ext, video_height)
+        )
+        video_elementary_stream_path_low_layer = os.path.join(dash_output_directory,
+            "{}_low.264".format(video_file_name_wo_ext)
+        )
+
+        high_layer_compression_ratio = int(os.getenv('HIGH_LAYER_COMPRESSION_RATIO_IN_PERCENTAGE', 7))
+        high_layer_bitrate = int(video_width * video_height * \
+            24 * 4 * (high_layer_compression_ratio/100.0))
+        print("high_layer_bitrate = {}".format(high_layer_bitrate))
+        high_layer_height = int(video_height)
+
+        low_layer_bitrate = int(os.getenv('480P_LAYER_BITRATE', 400000))
+        low_layer_height = int(video_height / 2.0)
+        print("low_layer_bitrate = {}".format(low_layer_bitrate))
+
+        #https://stackoverflow.com/questions/5024114/suggested-compression-ratio-with-h-264
+        h264_encoder(video_full_path,
+            video_elementary_stream_path_high_layer, 
+            high_layer_height, 
+            high_layer_bitrate
+        )
+
+        if low_layer_bitrate > 0:
+            h264_encoder(video_full_path,
+                video_elementary_stream_path_low_layer, 
+                low_layer_height, 
+                low_layer_bitrate
+            )
+
+    # subtitle stream
     webvtt_ov_fullpaths = []
-    subtitles_stream = None
     subtitles_index = 0 
     for stream in probe['streams']:
         if stream['codec_type'] == 'subtitle':
-            print('Found Subtitles in the input stream')
             webvtt_ov_fullpath_tmp = os.path.join(dash_output_directory,
                 '{}_ov_{}.vtt'.format(video_file_name_wo_ext, subtitles_index)
             )
-            print(video_full_path)
-            print(webvtt_ov_fullpath_tmp)
+            
+            print('found subtitles in the input stream of {}, and extract to {}'.format(
+                video_full_path,
+                webvtt_ov_fullpath_tmp
+            ))
+            
             extract_subtitle(video_full_path, webvtt_ov_fullpath_tmp, subtitles_index)
             webvtt_ov_fullpaths.append(webvtt_ov_fullpath_tmp)
             subtitles_index += 1
-
-    audio_codec_type = audio_stream['codec_name']
-
-    audio_elementary_stream_path = os.path.join(dash_output_directory,
-        "{}.m4a".format(video_file_name_wo_ext)
-    )
-
-    video_elementary_stream_path_high_layer = os.path.join(dash_output_directory,
-        "{}_{}.264".format(video_file_name_wo_ext, video_height)
-    )
-
-    temp_mpd = "{}/playlist.mpd".format(dash_output_directory)
-
-    if "aac" in audio_codec_type:
-        extract_audio(video_full_path, audio_elementary_stream_path)
-    else:
-        aac_encoder(video_full_path, audio_elementary_stream_path)
     
-    #https://stackoverflow.com/questions/5024114/suggested-compression-ratio-with-h-264
-    high_layer_compression_ratio = int(
-        os.getenv('HIGH_LAYER_COMPRESSION_RATIO_IN_PERCENTAGE', 7))
-    high_layer_bitrate = int(video_width * video_height * \
-        24 * 4 * (high_layer_compression_ratio/100.0))
-    print("high_layer_bitrate = {}".format(high_layer_bitrate))
-    low_layer_bitrate = int(os.getenv('480P_LAYER_BITRATE', 400000))
-    low_layer_height = int(video_height / 2.0)
-
-    video_elementary_stream_path_low_layer = os.path.join(dash_output_directory,
-        "{}_low.264".format(video_file_name_wo_ext)
-    )
-
-    h264_encoder(
-        video_full_path,
-        video_elementary_stream_path_high_layer, video_height, high_layer_bitrate)
-
-    if low_layer_bitrate > 0:
-        h264_encoder(
-            video_full_path,
-            video_elementary_stream_path_low_layer, low_layer_height, low_layer_bitrate)
-
-    #Thumbnail creation
+    # Thumbnail creation
     thumbnail_fullpath = "{}/thumbnail.jpeg".format(dash_output_directory)
-    if (os.path.isfile(thumbnail_fullpath) is False):
+    if video_stream:
         generate_thumbnail(video_full_path, duration, thumbnail_fullpath)
-
-    #Dash_packaging
+    
+    # Dash_packaging
+    mpd_full_path = "{}/playlist.mpd".format(dash_output_directory)
     dash_packager(video_elementary_stream_path_low_layer, low_layer_bitrate, low_layer_height,
-                  video_elementary_stream_path_high_layer, high_layer_bitrate, video_height, audio_elementary_stream_path,
-                  dash_output_directory)
-
-    os.remove(video_elementary_stream_path_high_layer)
-    if low_layer_bitrate > 0:
+                  video_elementary_stream_path_high_layer, high_layer_bitrate, high_layer_height, 
+                  audio_elementary_stream_path,
+                  mpd_full_path)
+    
+    if video_elementary_stream_path_high_layer:
+        os.remove(video_elementary_stream_path_high_layer)
+    if video_elementary_stream_path_low_layer:
         os.remove(video_elementary_stream_path_low_layer)
-    os.remove(audio_elementary_stream_path)
-
+    if audio_elementary_stream_path:
+        os.remove(audio_elementary_stream_path)
     if not keep_files:
         os.remove(video_full_path)
 
-    relative_path = os.path.relpath(temp_mpd, repository_local_path)
+    relative_path = os.path.relpath(mpd_full_path, repository_local_path)
     remote_video_url = os.path.join(repository_remote_url, relative_path)
 
     thumbnail_relativepath = os.path.relpath(thumbnail_fullpath, repository_local_path)
     remote_thumbnail_url = os.path.join(repository_remote_url, thumbnail_relativepath)
 
     video_info = {
-        'remote_video_url': remote_video_url,
-        'video_codec_type': video_codec_type,
-        'audio_codec_type': audio_codec_type,
         'video_height': video_height,
         'video_width': video_width,
+        'video_codec_type': video_codec_type,
+        'audio_codec_type': audio_codec_type,
+        'remote_video_url': remote_video_url,
         'remote_thumbnail_url': remote_thumbnail_url,
         'ov_subtitles': webvtt_ov_fullpaths,
+        'mpd_path': mpd_full_path,
         'video_full_path': video_full_path,
-        'mpd_path': temp_mpd
     }
 
     #File info creation
