@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
-from enum import Enum
+from enum import Enum, unique
 
+@unique
 class FileType(Enum):
     UNKNOWN = 0
     VIDEO = 1

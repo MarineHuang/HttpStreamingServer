@@ -114,6 +114,8 @@ class BaiduPcsClient():
     def sync_videos(self):
         downloaded_files=[]
         all_files = self.walk()
+        # subtitle first, audio second, vedio third, unknown last
+        all_files.sort(key=lambda pf : get_file_type(pf.path).value, reverse=True)
 
         for pcs_file in all_files:
             file_type = get_file_type(pcs_file.path)
