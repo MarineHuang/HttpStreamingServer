@@ -9,6 +9,8 @@ from types import SimpleNamespace
 
 from django.db import transaction
 from StreamingServer import settings
+from StreamServerApp.models import Video, Series, Movie, Subtitle
+from StreamServerApp.media_management.utils import FileType, get_file_type
 from StreamServerApp.database_utils import add_one_video_to_database
 
 
@@ -110,42 +112,38 @@ class BaiduPcsClient():
             return local_path
 
     def sync_videos(self):
+        downloaded_files=[]
         all_files = self.walk()
 
-        downloaded_files=[]
-        #first download subtitle file
         for pcs_file in all_files:
+            file_type = get_file_type(pcs_file.path)
+            if FileType.UNKNOWN == file_type:
+                print("skip downloading {} because unknown file type".format(pcs_file.path))
+                continue
+            
             file_name = os.path.basename(pcs_file.path)
-            if not os.path.exists(os.path.join(self.destination_dir, file_rename(file_name))) \
-                and (file_name.endswith(".srt")
-                     or file_name.endswith(".ass")
-                     or file_name.endswith(".vtt")):
-                print("begin to download: {}".format(pcs_file.path))
-                try:
-                    local_path = self.download_file(remote_path=pcs_file.path)
-                    if local_path:
-                        print("download success: {} -> {}".format(pcs_file.path, local_path))
-                        downloaded_files.append((pcs_file.path, local_path))
-                except Exception as e:
-                    print("error occurs when downloading {}".format(pcs_file.path))
-                    raise e
-
-        # then download video file
-        for pcs_file in all_files:
-            file_name = os.path.basename(pcs_file.path)
-            if not os.path.exists(os.path.join(self.destination_dir, file_rename(file_name))) \
-                and (file_name.endswith(".mp4")
-                     or file_name.endswith(".mkv")
-                     or file_name.endswith(".avi")
-                     or file_name.endswith(".mp3")
-                     or file_name.endswith(".aac")
-                     or file_name.endswith(".m4a")):
-                print("begin to download: {}".format(pcs_file.path))
-                try:
-                    local_path = self.download_file(remote_path=pcs_file.path)
-                    if local_path:
-                        print("download success: {} -> {}".format(pcs_file.path, local_path))
-                        downloaded_files.append((pcs_file.path, local_path))
+            dest_path = os.path.join(self.destination_dir, file_rename(file_name))
+            if os.path.exists(dest_path):
+                print("skip downloading {} because destination path exists".format(pcs_file.path))
+                continue
+            
+            print("begin to download: {}".format(pcs_file.path))
+            try:
+                local_path = self.download_file(remote_path=pcs_file.path)
+            except Exception as ex:
+                traceback.print_exception(type(ex), ex, ex.__traceback__)
+            finally:
+                if local_path:
+                    print("download success: {} -> {}".format(pcs_file.path, local_path))
+                    downloaded_files.append((pcs_file.path, local_path))
+                    if FileType.SUBTITLE == file_type:
+                        video_set = Video.objects.search_trigramm('name', file_name)\
+                            .select_related('movie', 'series').all()
+                        for v in video_set:
+                            print("video named {} try to get subtitles".format(v.name))
+                            v.get_subtitles(settings.VIDEO_ROOT, settings.VIDEO_URL) 
+                    
+                    elif FileType.VIDEO == file_type or FileType.AUDIO == file_type:
                         with transaction.atomic():
                             add_one_video_to_database(
                                     full_path=local_path, 
@@ -154,9 +152,7 @@ class BaiduPcsClient():
                                     filename=file_name,
                                     keep_files=True
                             )
-                except Exception as ex:
-                    print("error occurs when downloading {}".format(pcs_file.path))
-                    traceback.print_exception(type(ex), ex, ex.__traceback__)
-                    continue
-
+                else:
+                    print("download failed: {}".format(pcs_file.path))
+            
         return downloaded_files

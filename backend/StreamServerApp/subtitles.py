@@ -3,7 +3,7 @@ from babelfish import Language
 from subliminal import Video, subtitle, region, download_best_subtitles, save_subtitles
 import io
 from StreamingServer import settings
-
+from StreamServerApp.media_management.utils import FileType, get_file_type
 from StreamServerApp.media_processing import extract_subtitle, convert_subtitles_to_webvtt
 
 #https://subliminal.readthedocs.io/en/latest/user/usage.html
@@ -86,7 +86,7 @@ def get_subtitles(video_path, video_folder=None):
     for root, _, files in os.walk(settings.FILE_STORAGE):
         for f in files:
             if f.startswith(video_filename) \
-               and (f.endswith('.srt') or f.endswith(".ass")):
+               and FileType.SUBTITLE == get_file_type(f):
                 srt_file_path = os.path.join(root, f)
                 srt_fullpath['eng'] = srt_file_path
                 
