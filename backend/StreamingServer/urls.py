@@ -21,6 +21,7 @@ from StreamServerApp import views as appviews
 
 urlpatterns = [
     path('streaming/', include('StreamServerApp.urls')),
+    path('ai/', include('AIServiceApp.urls')),
     path('admin/', admin.site.urls),
 	# empty url
 	url(r'^$', appviews.videos.index),

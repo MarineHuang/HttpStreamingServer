@@ -93,6 +93,7 @@ INSTALLED_APPS = [
     'django.contrib.postgres',
     'StreamingServer',
     'StreamServerApp',
+    'AIServiceApp',
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
@@ -208,7 +209,7 @@ if sentry_dsn:
         send_default_pii=True
     )
 
-# celery
+# celery worker
 CELERY_TIMEZONE = "Asia/Shanghai"
 CELERY_ENABLE_UTC = False
 CELERY_BROKER_URL = 'redis://redis:6380'
@@ -216,6 +217,15 @@ CELERY_RESULT_BACKEND = 'redis://redis:6380'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_SERIALIZER = 'json'
+
+
+# celery beat
+CELERY_BEAT_SCHEDULER = 'redbeat.RedBeatScheduler'
+CELERY_REDBEAT_REDIS_URL = CELERY_BROKER_URL
+CELERY_REDBEAT_KEY_PREFIX = 'redbeat:'                             # 任务前缀
+CELERY_REDBEAT_REDIS_OPTIONS = {'max_retries': 3}
+CELERY_BEAT_MAX_LOOP_INTERVAL = 1                                 # 监听频率，秒
+CELERY_REDBEAT_LOCK_TIMEOUT = CELERY_BEAT_MAX_LOOP_INTERVAL * 5   # 锁超时，秒
 
 CELERY_BEAT_SCHEDULE = {
     "sync_videos": {

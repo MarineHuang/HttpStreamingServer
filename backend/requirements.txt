@@ -19,3 +19,8 @@ celery==4.4.6
 redis==3.4.1
 ffsubsync==0.4.3
 baidupcs_py==0.7.1
+celery-redbeat==2.0.0
+aliyun-python-sdk-core
+oss2
+Levenshtein
+srt

@@ -5,6 +5,8 @@ import io
 from StreamingServer import settings
 from StreamServerApp.media_management.utils import FileType, get_file_type
 from StreamServerApp.media_processing import extract_subtitle, convert_subtitles_to_webvtt
+from AIServiceApp.transcription import transcript_media_file
+from AIServiceApp.subtitle_aligner import force_align
 
 #https://subliminal.readthedocs.io/en/latest/user/usage.html
 
@@ -85,22 +87,35 @@ def get_subtitles(video_path, video_folder=None):
 
     for root, _, files in os.walk(settings.FILE_STORAGE):
         for f in files:
-            if f.startswith(video_filename) \
-               and FileType.SUBTITLE == get_file_type(f):
-                srt_file_path = os.path.join(root, f)
-                srt_fullpath['eng'] = srt_file_path
-                
-                webvtt_file_name = os.path.splitext(os.path.basename(srt_file_path))[0] + '.vtt'
-                
-                if video_folder is None:
-                    webvtt_file_path = os.path.join(settings.VIDEO_ROOT, webvtt_file_name)
-                else:
-                    webvtt_file_path = os.path.join(video_folder, webvtt_file_name)
-                
-                convert_subtitles_to_webvtt(srt_file_path, webvtt_file_path)
-                webvtt_fullpath['eng'] = webvtt_file_path
+            if not f.startswith(video_filename):
+                continue
 
-                return [webvtt_fullpath, srt_fullpath]
+            srt_file_path = None
+            if FileType.SUBTITLE == get_file_type(f):
+                srt_file_path = os.path.join(root, f)
+            elif FileType.QUASI_SUBTITLE == get_file_type(f):
+                srt_file_path = os.path.join(root, video_filename+'.srt')
+                generate_subtitle_by_force_align(
+                    media_file=video_path,
+                    quasi_subtitle_file=os.path.join(root, f),
+                    output_subtitle_file=srt_file_path
+                )
+
+            if srt_file_path is None:
+                continue
+
+            srt_fullpath['eng'] = srt_file_path 
+            webvtt_file_name = os.path.splitext(os.path.basename(srt_file_path))[0] + '.vtt'
+            
+            if video_folder is None:
+                webvtt_file_path = os.path.join(settings.VIDEO_ROOT, webvtt_file_name)
+            else:
+                webvtt_file_path = os.path.join(video_folder, webvtt_file_name)
+            
+            convert_subtitles_to_webvtt(srt_file_path, webvtt_file_path)
+            webvtt_fullpath['eng'] = webvtt_file_path
+
+            return [webvtt_fullpath, srt_fullpath]
 
     # step2: try download subtitle from subliminal
     #try:
@@ -116,3 +131,26 @@ def get_subtitles(video_path, video_folder=None):
     #    pass
 
     return [webvtt_fullpath, srt_fullpath]
+
+
+def generate_subtitle_by_force_align(
+                    media_file: str,
+                    quasi_subtitle_file: str,
+                    output_subtitle_file: str
+                ) -> bool:
+    '''
+    通过force align为音视频生成字幕
+    Args:
+        media_file: 音视频文件路径
+        quasi_subtitle_file: 准字幕文件路径, 即断好句的纯文本文件
+        output_subtitle_file: 生成的字幕文件
+    '''
+    print(f'generate subtitle by force align: media is {media_file}, quasi subtitle is {quasi_subtitle_file}')
+    # 音视频转写
+    transcription_result = transcript_media_file(media_file)
+    if transcription_result is None:
+        print(f"transcript for {media_file} failed")
+        return False
+    force_align(transcription_result, quasi_subtitle_file, output_subtitle_file)
+    print(f'generate subtitle by force align success, output subtitle file {output_subtitle_file}')
+    return True

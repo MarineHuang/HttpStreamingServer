@@ -135,3 +135,7 @@ def extract_audio(filename, output):
     # ffmpeg -y -i {filename} -vn -acodec copy {outputfile}
     cmd = ["ffmpeg", "-y", "-i", filename, "-vn", "-acodec", "copy", output]
     run_ffmpeg_process(cmd)
+
+def transfor_audio(filename, output, channel=1, frequency=16000):
+    cmd = ["ffmpeg", "-y", "-i", filename, "-ac", str(channel), "-ar", str(frequency), output]
+    run_ffmpeg_process(cmd)
