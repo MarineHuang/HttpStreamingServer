@@ -28,7 +28,9 @@
     "reactstrap": "^8.4.1",
     "dashjs": "^4.4.1",
     "srt-webvtt": "1.0.1",
-    "styled-components": "latest"
+    "styled-components": "latest",
+    "video.js": "7.20.3",
+    "videojs-contrib-dash": "5.1.1"
   },
   "scripts": {
     "prestart": "if [ ! -d node_modules ]; then npm install; fi",
