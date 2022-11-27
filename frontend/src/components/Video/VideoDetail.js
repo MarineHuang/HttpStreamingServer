@@ -76,6 +76,11 @@ function VideoDetail  ({ video, handleVideoSelect, authTokens, setHistoryPager }
                     }
                 }, () => {
                     videojs.log('player is ready');
+
+                    videojs.log('video time:' + video.time);
+                    if (video.time > 0){
+                        player.currentTime(video.time);
+                    }
                     // add subtitles
                     videojs.log('add new subtitles when player is ready')
                     video.subtitles.map((sub, index) => {
@@ -107,6 +112,11 @@ function VideoDetail  ({ video, handleVideoSelect, authTokens, setHistoryPager }
                     src: video.videoUrl,
                     type: 'application/dash+xml'
                 });
+                
+                console.log('video time:' + video.time)
+                if (video.time > 0){
+                    player.currentTime(video.time);
+                }
 
                 // add new subtitles
                 console.log('add subtitles when video changed')
@@ -151,9 +161,11 @@ function VideoDetail  ({ video, handleVideoSelect, authTokens, setHistoryPager }
     return (
         <div>
             <div className="ui embed">
-                <div ref={videoRef} />
+                <div class="videocontent">
+                    <div ref={videoRef} />
+                </div>
             </div>
-            <div className="ui segment">
+            <div className="ui segment" style={{marginTop: '2em'}}>
                 <h4 className="ui header">{video.name}</h4>
             </div>
             {/*<ResolutionSelector playerref={player} video={video} playerIsInitialized={playerIsInitialized}/>*/}

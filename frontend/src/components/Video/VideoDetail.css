@@ -32,6 +32,12 @@
     display: block!important;
 }
 
+.videocontent {
+    width: 80%;
+    max-width: 640px;
+    margin: 0 auto;
+}
+
 /* Text Track Styles */
 /* Overall track holder for both captions and subtitles */
 .video-js .vjs-text-track-display {
