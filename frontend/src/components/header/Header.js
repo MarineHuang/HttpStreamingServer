@@ -44,24 +44,27 @@ export default function Header({ handleFormSubmit, displayModal, client, userinf
 
                 }
 
-
-                <div className="headerButton hideifmobile">
-                {authTokens &&
-                    <Button variant="contained" color="primary" className="headerButton">
-                        <a href="/transmission/web/">
-                            Add Torrent
-                        </a>
-                    </Button>
+                {
+                //<div className="headerButton hideifmobile">
+                //{authTokens &&
+                //    <Button variant="contained" color="primary" className="headerButton">
+                //        <a href="/transmission/web/">
+                //            Add Torrent
+                //        </a>
+                //    </Button>
+                //}
+                //</div>
                 }
-                </div>
 
-                <div className="headerButton hideifmobile">
-                {authTokens &&
-                    <UpdateVideos
-                        client={client}
-                    />
+                {
+                //<div className="headerButton hideifmobile">
+                //{authTokens &&
+                //    <UpdateVideos
+                //        client={client}
+                //    />
+                //}
+                //</div>
                 }
-                </div>
 
             </div>
         </header>
