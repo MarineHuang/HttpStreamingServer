@@ -9,11 +9,13 @@ class FileType(Enum):
     AUDIO = 2
     SUBTITLE = 3
     QUASI_SUBTITLE = 4
+    TRANS = 5
 
 MEDIA_VIDEO_EXTS = ['mp4', 'avi', 'mkv', 'flv']
 MEDIA_AUDIO_EXTS = ['mp3', 'aac', 'm4a']
 MEDIA_SUBTITLE_EXTS = ['srt', 'ass', 'vtt']
 MEDIA_QUASI_SUBTITLE_EXTS = ['txt', 'lrc']
+TRANS_EXTS = ['trans']
 
 def get_file_type(path) -> FileType:
     '''

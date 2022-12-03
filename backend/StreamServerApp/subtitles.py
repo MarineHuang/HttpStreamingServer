@@ -7,6 +7,7 @@ from StreamServerApp.media_management.utils import FileType, get_file_type
 from StreamServerApp.media_processing import extract_subtitle, convert_subtitles_to_webvtt
 from AIServiceApp.transcription import transcript_media_file
 from AIServiceApp.subtitle_aligner import force_align
+import json
 
 #https://subliminal.readthedocs.io/en/latest/user/usage.html
 
@@ -95,11 +96,22 @@ def get_subtitles(video_path, video_folder=None):
                 srt_file_path = os.path.join(root, f)
             elif FileType.QUASI_SUBTITLE == get_file_type(f):
                 srt_file_path = os.path.join(root, video_filename+'.srt')
-                generate_subtitle_by_force_align(
-                    media_file=video_path,
-                    quasi_subtitle_file=os.path.join(root, f),
-                    output_subtitle_file=srt_file_path
-                )
+                trans_file_path = os.path.join(root, video_filename+'.trans')
+                if os.path.exists(trans_file_path):
+                    print(f'generate subtitle by adding time stamp')
+                    add_time_stamp(
+                        transcription_result=trans_file_path,
+                        text=os.path.join(root, f),
+                        output_subtitle_path=srt_file_path
+                    )
+                else:
+                    print(f'generate subtitle by transcript')
+                    generate_subtitle_by_transcript(
+                        media_file=video_path,
+                        text=os.path.join(root, f),
+                        output_subtitle_path=srt_file_path,
+                        trans_file = trans_file_path
+                    )
 
             if srt_file_path is None:
                 continue
@@ -133,24 +145,62 @@ def get_subtitles(video_path, video_folder=None):
     return [webvtt_fullpath, srt_fullpath]
 
 
-def generate_subtitle_by_force_align(
+def add_time_stamp(transcription_result,
+                text,
+                output_subtitle_path: str
+                ):
+    '''
+    添加时间戳生成字幕
+    Args:
+        transcription_result: 音视频文件的转写结果(类型dict)，或者文件路径
+        text: 断好句的没有时间戳的字幕(类型list(str)), 或者文件路径
+        output_subtitle_path: 生成的字幕文件路径
+    '''
+    transcription_result_dict = None
+    
+    if isinstance(transcription_result, dict):
+        transcription_result_dict = transcription_result
+    elif isinstance(transcription_result, str):
+        try:
+            fp = open(transcription_result, 'r')
+            transcription_result_dict = json.load(fp)
+        except:
+            print(f"load transcription result failed: {transcription_result}")
+    else:
+        print(f"invalid transcription result, which type is {type(transcription_result)}")
+        return None
+
+    force_align(transcription_result_dict, text, output_subtitle_path)
+    print(f'generate subtitle by adding time stamp, \
+output subtitle file: {output_subtitle_path}')
+    return True
+
+def generate_subtitle_by_transcript(
                     media_file: str,
-                    quasi_subtitle_file: str,
-                    output_subtitle_file: str
+                    text,
+                    output_subtitle_path: str,
+                    trans_file: str
                 ) -> bool:
     '''
-    通过force align为音视频生成字幕
+    通过语音识别为音视频生成字幕
     Args:
         media_file: 音视频文件路径
-        quasi_subtitle_file: 准字幕文件路径, 即断好句的纯文本文件
-        output_subtitle_file: 生成的字幕文件
+        text: 断好句的没有时间戳的字幕(类型list(str)), 或者文件路径
+        output_subtitle_path: 生成的字幕文件
+        trans_file: 音视频文件的转写结果保存路径
     '''
-    print(f'generate subtitle by force align: media is {media_file}, quasi subtitle is {quasi_subtitle_file}')
     # 音视频转写
     transcription_result = transcript_media_file(media_file)
     if transcription_result is None:
         print(f"transcript for {media_file} failed")
         return False
-    force_align(transcription_result, quasi_subtitle_file, output_subtitle_file)
-    print(f'generate subtitle by force align success, output subtitle file {output_subtitle_file}')
-    return True
+    else:
+        print(f"transcript for {media_file} success")
+        with open(trans_file, "w") as fp:
+            print(f"save transcript result to {trans_file}")
+            json.dump(transcription_result, fp)
+
+        add_time_stamp(transcription_result, text, output_subtitle_path)
+        print(f'generate subtitle by transcript success, \
+output subtitle file: {output_subtitle_path}')
+        return True

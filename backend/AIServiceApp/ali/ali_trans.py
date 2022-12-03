@@ -67,7 +67,7 @@ class AliTrans():
                     f'录音文件识别请求失败，失败原因是: {status_text}，你可以将这个代码复制，到 “https://help.aliyun.com/document_detail/90727.html” 查询具体原因')
                 return False
         except Exception as ex:
-            print(f'error when submit transcription task: {ex}')
+            print(f'error when submit transcript task: {ex}')
             traceback.print_exception(type(ex), ex, ex.__traceback__)
             return False
         finally:
@@ -91,19 +91,19 @@ class AliTrans():
             response_data = self.client.do_action_with_exception(request)
             # 识别结果json
             response = json.loads(response_data)
-            print(f'response of transcription result: {response}')
+            #print(f'response of transcription result: {response}')
             status = response['StatusText']
             if status == "SUCCESS":
-                print(f'task named {task_id} success')
+                print(f'transcript task named {task_id} success')
                 reg_result = response
             elif status == "QUEUEING":
-                print(f'task named {task_id} QUEUEING')
+                print(f'transcript task named {task_id} QUEUEING')
             elif status == "RUNNING":
-                print(f'task named {task_id} RUNNING')
+                print(f'transcript task named {task_id} RUNNING')
             else:
-                print(f'unknown status of task named {task_id}: {status}')
+                print(f'unknown status of transcript task named {task_id}: {status}')
         except Exception as ex:
-            print(f'error occours when query task named {task_id}: {ex}')
+            print(f'error occours when query transcript task named {task_id}: {ex}')
             traceback.print_exception(type(ex), ex, ex.__traceback__)
             status="FAILD"
         finally:
