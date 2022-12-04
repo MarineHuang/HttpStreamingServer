@@ -15,7 +15,7 @@ MEDIA_VIDEO_EXTS = ['mp4', 'avi', 'mkv', 'flv']
 MEDIA_AUDIO_EXTS = ['mp3', 'aac', 'm4a']
 MEDIA_SUBTITLE_EXTS = ['srt', 'ass', 'vtt']
 MEDIA_QUASI_SUBTITLE_EXTS = ['txt', 'lrc']
-TRANS_EXTS = ['trans']
+MEDIA_TRANS_EXTS = ['trans']
 
 def get_file_type(path) -> FileType:
     '''
@@ -35,6 +35,8 @@ def get_file_type(path) -> FileType:
             return FileType.SUBTITLE
         elif ext in MEDIA_QUASI_SUBTITLE_EXTS:
             return FileType.QUASI_SUBTITLE
+        elif ext in MEDIA_TRANS_EXTS:
+            return FileType.TRANS
         else:
             return FileType.UNKNOWN
     else:
