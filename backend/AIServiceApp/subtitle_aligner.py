@@ -6,17 +6,19 @@ import argparse,json
 import srt
 import Levenshtein
 import datetime
+import chardet
+import logging
+
+LOG = logging.getLogger(__name__)
 
 def main():
     parser = argparse.ArgumentParser(
         description='''功能: 字幕时间码匹配
         输入1: 语音识别结果，json文件
-        输入2: 字幕文稿，已经断句的
+        输入2: 已经断句的字幕文稿
         输出: 带时间码的字幕文件''',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    #parser.add_argument('Media', nargs='+',  type=str, help='可一次识别多个文件')
-    #parser.add_argument('--version', action='version', version='%(prog)s 1.0')
     parser.add_argument('-r', '--reg', metavar='识别结果', type=str, required=True, help='语音识别结果的json文件')
     parser.add_argument('-t', '--text', metavar='字幕文稿', type=str, required=True, help='已经断句的字幕文稿')
     parser.add_argument('-o', '--output', metavar='字幕文稿', type=str, required=False, help='输出的字幕文件')
@@ -39,27 +41,15 @@ def print_with_color(words, in_dict):
         else:
             out_str += f'\033[31m{word}\033[0m'
         out_str += ' '
-    print(out_str)
+    LOG.debug(out_str)
 
 def ids2str(ids):
     '''
     将ID转换成unicode码值
-    转换方法：chr(id+65)
+    转换方法: chr(id+65)
     为什么是65: 65是字符A的码值，最小的可见字符码值
     '''
     return ''.join(map( lambda x : chr(65+x), ids))
-
-def srt_construct(beg_time, end_time, content, index=0, sub_list=[]):
-    '''
-    组装subtitle
-    beg_time, end_time的单位为毫秒
-    '''
-    srt_beg_time = datetime.timedelta(seconds=(beg_time // 1000), microseconds=(beg_time % 1000 * 1000))
-    srt_end_time = datetime.timedelta(seconds=(end_time // 1000), microseconds=(end_time % 1000 * 1000))
-
-    sub_list.append(srt.Subtitle(index=index, start=srt_beg_time, end=srt_end_time, content=content))
-    return srt.compose(sub_list, reindex=True, start_index=1, strict=True)
-
 
 def fa_by_levenshtein(reg_words, txt_words, words_dict, wordpos_line, Debug=False):
     reg_words_id = []
@@ -67,19 +57,19 @@ def fa_by_levenshtein(reg_words, txt_words, words_dict, wordpos_line, Debug=Fals
         reg_words_id.append(word_tupe['WordID'])
     src_str = ids2str(reg_words_id)
     if Debug:
-        print(src_str)
+        LOG.debug(src_str)
 
     txt_words_id = []
     for word_tupe in txt_words:
         txt_words_id.append(word_tupe['WordID'])
     dest_str = ids2str(txt_words_id)
     if Debug:
-        print(dest_str)
+        LOG.debug(dest_str)
 
     # 遍历Levenshtein算法返回的编辑操作
     for op in Levenshtein.opcodes(src_str,dest_str):
         if Debug:
-            print(op)
+            LOG.debug(op)
         if 'insert' == op[0]:
             # 识别结果中少识别一些单词, 或者说字幕文稿中多了一些单词
             assert  op[2] == op[1], f'insert operation must be at a single position of source sequence'
@@ -110,11 +100,11 @@ def fa_by_levenshtein(reg_words, txt_words, words_dict, wordpos_line, Debug=Fals
                     txt_word['EndTime'] = reg_word['EndTime']
                     txt_word['RegWord'] += f"\033[4;31m {reg_word['Word'].strip()}\033[0m" # 删除为红色+下划线
         else:
-            print(f'error: invalid operation named {op[0]}')
+            LOG.error(f'error: invalid operation named {op[0]}')
 
-    tmp_sub_list=[]
-    ret_subtitle = None
-    for (lineno,wordpos) in wordpos_line.items():
+    subtitle_list=[]
+
+    for (lineno, wordpos) in wordpos_line.items():
         beg=wordpos['beg_wordpos']
         end=wordpos['end_wordpos']
         tmp_txt=[]
@@ -127,22 +117,32 @@ def fa_by_levenshtein(reg_words, txt_words, words_dict, wordpos_line, Debug=Fals
             end_time = word_tupe['EndTime']
         
         # construct subtitle
-        ret_subtitle = srt_construct(beg_time, end_time, ' '.join(tmp_txt), index=0, sub_list=tmp_sub_list)
+        srt_beg_time = datetime.timedelta(seconds=(beg_time // 1000), microseconds=(beg_time % 1000 * 1000))
+        srt_end_time = datetime.timedelta(seconds=(end_time // 1000), microseconds=(end_time % 1000 * 1000))
+
         if Debug:
-            print(' '.join(tmp_txt))
-            print(' '.join(tmp_reg))
-            #print(beg_time)
-            #print(end_time)
+            LOG.debug(' '.join(tmp_txt))
+            LOG.debug(' '.join(tmp_reg))
+            #LOG.debug(beg_time)
+            #LOG.debug(end_time)
+        
+        #beg_time, end_time的单位为毫秒
+        subtitle_list.append(
+            srt.Subtitle(index=0, start=srt_beg_time, end=srt_end_time, content=' '.join(tmp_txt))
+        )
 
-    return ret_subtitle
+    return subtitle_list
 
-def force_align(reg_result, text_file, out_file, begin_time=0, end_time=None, begin_lineno=0, end_lineno=None, Debug=False):
+def force_align(reg_result, text, out_file, begin_time=0, end_time=None, 
+    begin_lineno=0, end_lineno=None, Debug=False):
     '''
     字幕时间码匹配
     Args:
-        reg_result: 语音识别结果，str(means file path) or json
-        text_file: 断好句的字幕纯文本文件
+        reg_result: 语音识别结果，dict or str(means file path)
+        text: 断好句的字幕文本文件, list of str or str(means file path)
         out_file: 输出的字幕文件
+    Return:
+        list of srt.Subtitle
     '''
     if 'end_time' not in vars():
         end_time = None
@@ -155,11 +155,15 @@ def force_align(reg_result, text_file, out_file, begin_time=0, end_time=None, be
     if isinstance(reg_result, dict):
         words_list = reg_result['Result']['Words']
     elif isinstance(reg_result, str):
-        with open(reg_result, 'r', encoding='utf-8') as freg:
+        encoding='utf-8'
+        with open(reg_result, "rb") as fp:
+            encoding = chardet.detect(fp.read())["encoding"]
+        with open(reg_result, 'r', encoding=encoding) as freg:
             json_reg = json.load(freg)
             words_list = json_reg['Result']['Words']
     else:
-        raise Exception('unknown parameter type')
+        raise Exception(f'invalid type of parameter \"reg_result\" which must be \
+dict or str(means file path) and really is {type(reg_result)}')
         
     begin_index = 0
     for i,word in enumerate(words_list):
@@ -176,15 +180,25 @@ def force_align(reg_result, text_file, out_file, begin_time=0, end_time=None, be
 
     words_list = words_list[begin_index : end_index]
     #if Debug:
-    #    print(words_list)
+    #    LOG.debug(words_list)
 
-    with open(text_file, 'r', encoding='utf-8') as ftxt:
-        txt_list = ftxt.readlines()
-        if None is end_lineno:
-            end_lineno = len(txt_list)
-        txt_list = txt_list[begin_lineno : end_lineno]
-        #if Debug:
-        #    print(txt_list)
+    if isinstance(text, list):
+        txt_list = text
+    elif isinstance(text, str):
+        encoding='utf-8'
+        with open(text, "rb") as fp:
+            encoding = chardet.detect(fp.read())["encoding"]
+        with open(text, 'r', encoding=encoding) as ftxt:
+            txt_list = ftxt.readlines()
+    else:
+        raise Exception(f'invalid type of parameter \"text\" which must be \
+list of str or str(means file path) and really is {type(text)}')
+
+    if None is end_lineno:
+        end_lineno = len(txt_list)
+    txt_list = txt_list[begin_lineno : end_lineno]
+    #if Debug:
+    #    print(txt_list)
 
     # 将识别结果word放入dict中，并转换成WordID
     words_dict={}
@@ -220,14 +234,18 @@ def force_align(reg_result, text_file, out_file, begin_time=0, end_time=None, be
         wordpos_line[lineno]['end_wordpos'] = len(txt_words)
         #打印出不在words_dict的单词
         if Debug:
-            #print(txt_words)
-            #print(wordpos_line)
+            #LOG.debug(txt_words)
+            #LOG.debug(wordpos_line)
             print_with_color(words, in_dict)
 
     # 使用Levenshtein进行对齐
-    ret_subtitle = fa_by_levenshtein(words_list, txt_words, words_dict, wordpos_line, Debug)
+    subtitle_list = fa_by_levenshtein(words_list, txt_words, words_dict, wordpos_line, Debug)
+    
     with open(out_file, 'w', encoding='utf-8') as f:
-        f.write(ret_subtitle)
+        content = srt.compose(subtitle_list, reindex=True, start_index=1, strict=True)
+        f.write(content)
+    
+    return subtitle_list
 
 if __name__ == '__main__':
     main()

@@ -24,3 +24,4 @@ aliyun-python-sdk-core
 oss2
 Levenshtein
 srt
+chardet
