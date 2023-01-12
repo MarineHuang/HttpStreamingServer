@@ -11,6 +11,7 @@ import subliminal
 from StreamServerApp.media_management.processing import *
 from StreamServerApp.media_management.dash_packager import dash_packager
 from StreamServerApp.media_management.fileinfo import createfileinfo, readfileinfo
+from StreamServerApp.utils import get_file_md5
 from StreamingServer import settings
 
 def prepare_video(video_full_path,
@@ -29,14 +30,15 @@ def prepare_video(video_full_path,
         this functions will only add videos to the database if
         they are encoded with h264/AAC codec
     """
-    print("processing {}".format(video_full_path))
-
-    video_file_name_wo_ext = os.path.splitext(os.path.split(video_full_path)[-1])[0]
-    # /usr/Videos/2022-10-15/Dune
+    #video_file_name_wo_ext = os.path.splitext(os.path.split(video_full_path)[-1])[0]
+    video_file_md5 = get_file_md5(video_full_path)
     dash_output_directory = os.path.join(repository_local_path,
         datetime.datetime.now().strftime('%Y-%m-%d'),
-        video_file_name_wo_ext
+        video_file_md5
     )
+
+    print(f"processing {video_full_path} to directory {dash_output_directory}")
+
     if os.path.exists(dash_output_directory):
         raise Exception("dash directory is exists: {}".format(dash_output_directory))
     else:
@@ -76,7 +78,7 @@ def prepare_video(video_full_path,
             duration = float(audio_stream['duration'])
 
         audio_elementary_stream_path = os.path.join(dash_output_directory,
-            "{}.m4a".format(video_file_name_wo_ext)
+            "{}.m4a".format(video_file_md5)
         )
 
         audio_codec_type = audio_stream['codec_name']
@@ -101,10 +103,10 @@ def prepare_video(video_full_path,
             duration = float(video_stream['duration'])
 
         video_elementary_stream_path_high_layer = os.path.join(dash_output_directory,
-            "{}_{}.264".format(video_file_name_wo_ext, video_height)
+            "{}_{}.264".format(video_file_md5, video_height)
         )
         video_elementary_stream_path_low_layer = os.path.join(dash_output_directory,
-            "{}_low.264".format(video_file_name_wo_ext)
+            "{}_low.264".format(video_file_md5)
         )
 
         high_layer_compression_ratio = int(os.getenv('HIGH_LAYER_COMPRESSION_RATIO_IN_PERCENTAGE', 7))
@@ -137,7 +139,7 @@ def prepare_video(video_full_path,
     for stream in probe['streams']:
         if stream['codec_type'] == 'subtitle':
             webvtt_ov_fullpath_tmp = os.path.join(dash_output_directory,
-                '{}_ov_{}.vtt'.format(video_file_name_wo_ext, subtitles_index)
+                '{}_ov_{}.vtt'.format(video_file_md5, subtitles_index)
             )
             
             print('found subtitles in the input stream of {}, and extract to {}'.format(
@@ -179,6 +181,7 @@ def prepare_video(video_full_path,
     remote_thumbnail_url = os.path.join(repository_remote_url, thumbnail_relativepath)
 
     video_info = {
+        'md5': video_file_md5,
         'video_height': video_height,
         'video_width': video_width,
         'video_codec_type': video_codec_type,

@@ -51,13 +51,12 @@ def update_db_from_local_folder_async(keep_files=True):
 @skip_if_running
 def sync_videos(self):
     cookies=""
-    remote_urls=["/subtitle/"]
-
+    remotedir="/shared/"
+    localdir=str(settings.FILE_STORAGE)
     try:
-        panClient = BaiduPcsClient(cookies, remote_urls)
-        ret = panClient.sync_videos()
+        panClient = BaiduPcsClient(cookies, remotedir, localdir)
+        panClient.sync()
         logger.info("task of sync videos success")
-        logger.info("synchronized videos: {}".format(ret))
     except Exception as ex:
         logger.error("task of sync videos failed")
         traceback.print_exception(type(ex), ex, ex.__traceback__)

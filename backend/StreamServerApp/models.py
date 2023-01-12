@@ -47,6 +47,7 @@ class Series(CommonInfo):
 
 class Video(models.Model):
     name = models.CharField(max_length=200)
+    md5 = models.CharField(max_length=100)
     height = models.IntegerField(default=0)
     width = models.IntegerField(default=0)
     video_codec = models.CharField(max_length=100, default="")

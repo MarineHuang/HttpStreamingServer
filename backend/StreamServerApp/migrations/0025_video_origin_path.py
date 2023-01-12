@@ -15,4 +15,9 @@ class Migration(migrations.Migration):
             name='origin_path',
             field=models.CharField(default='', max_length=300),
         ),
+        migrations.AddField(
+            model_name='video',
+            name='md5',
+            field=models.CharField(default='', max_length=100),
+        ),
     ]

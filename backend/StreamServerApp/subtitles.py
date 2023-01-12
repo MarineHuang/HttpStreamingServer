@@ -113,7 +113,8 @@ def get_subtitles(video_path, video_folder=None):
                         trans_file = trans_file_path
                     )
 
-            if srt_file_path is None:
+            if srt_file_path is None \
+                or not os.path.exists(srt_file_path):
                 continue
 
             srt_fullpath['eng'] = srt_file_path 
@@ -127,6 +128,7 @@ def get_subtitles(video_path, video_folder=None):
             convert_subtitles_to_webvtt(srt_file_path, webvtt_file_path)
             webvtt_fullpath['eng'] = webvtt_file_path
 
+            print("get subtitle success for {}".format(video_path))
             return [webvtt_fullpath, srt_fullpath]
 
     # step2: try download subtitle from subliminal
@@ -142,6 +144,7 @@ def get_subtitles(video_path, video_folder=None):
     #    #This usually happens when there is not enough data for subliminal to guess
     #    pass
 
+    print("get no subtitle for {}".format(video_path))
     return [webvtt_fullpath, srt_fullpath]
 
 
@@ -156,21 +159,7 @@ def add_time_stamp(transcription_result,
         text: 断好句的没有时间戳的字幕(类型list(str)), 或者文件路径
         output_subtitle_path: 生成的字幕文件路径
     '''
-    transcription_result_dict = None
-    
-    if isinstance(transcription_result, dict):
-        transcription_result_dict = transcription_result
-    elif isinstance(transcription_result, str):
-        try:
-            fp = open(transcription_result, 'r')
-            transcription_result_dict = json.load(fp)
-        except:
-            print(f"load transcription result failed: {transcription_result}")
-    else:
-        print(f"invalid transcription result, which type is {type(transcription_result)}")
-        return None
-
-    force_align(transcription_result_dict, text, output_subtitle_path)
+    force_align(transcription_result, text, output_subtitle_path)
     print(f'generate subtitle by adding time stamp, \
 output subtitle file: {output_subtitle_path}')
     return True
@@ -186,7 +175,7 @@ def generate_subtitle_by_transcript(
     Args:
         media_file: 音视频文件路径
         text: 断好句的没有时间戳的字幕(类型list(str)), 或者文件路径
-        output_subtitle_path: 生成的字幕文件
+        output_subtitle_path: 生成的字幕文件路径
         trans_file: 音视频文件的转写结果保存路径
     '''
     # 音视频转写

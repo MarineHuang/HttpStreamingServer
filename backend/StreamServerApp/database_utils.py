@@ -147,6 +147,7 @@ def add_one_video_to_database(full_path,
 
     v = Video(
         name=filename,
+        md5=video_infos['md5'],
         origin_path=video_infos['video_full_path'],
         video_folder=video_infos['mpd_path'],
         video_url=video_infos['remote_video_url'],
@@ -193,8 +194,8 @@ def add_one_video_to_database(full_path,
             ov_sub.save()
 
         #we use oncommit because autocommit is not enabled.
-        transaction.on_commit(lambda: get_subtitles_async.delay(
-            v.id, repository_path, repository_url))
+        #transaction.on_commit(lambda: get_subtitles_async.delay(
+        #    v.id, repository_path, repository_url))
         #transaction.on_commit(lambda: v.get_subtitles(repository_path, repository_url))
 
     return return_value
