@@ -1,10 +1,9 @@
 version: "2"
 
 volumes:
-  dbvolume:
-  ipython:
+  ipython_volume:
   static_volume:
-  node_modules:
+  node_modules_volume:
 
 services:
   db:
@@ -14,7 +13,7 @@ services:
     env_file:
       - .env
     volumes:
-      - dbvolume:/var/lib/postgresql/data/
+      - /home/StreamServer/database:/var/lib/postgresql/data/
   
   web:
     build:
@@ -30,12 +29,11 @@ services:
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - HTTPSTREAMING_HOST=${HTTPSTREAMING_HOST}
     volumes:
+      - /home/StreamServer/Videos:/usr/src/app/Videos
+      - /home/StreamServer/torrent:/usr/torrent/:rw
       - ./backend/:/usr/src/app/
-      - ./Videos/:/usr/src/app/Videos
       - static_volume:/usr/src/app/staticfiles
-      - /static/
-      - ipython:/root/.ipython
-      - /home/important_data/torrent:/usr/torrent/:rw
+      - ipython_volume:/root/.ipython
     command: bash -c "./wait-for-it.sh db:5432 -- python3 /usr/src/app/manage.py runserver 0.0.0.0:8000"
     depends_on:
       - db
@@ -44,11 +42,11 @@ services:
   nginx:
     build: ./nginx
     volumes:
+      - /home/StreamServer/Videos:/usr/src/app/Videos
+      - /home/StreamServer/torrent:/usr/torrent/:rw
       - ./backend/:/usr/src/app/
-      - ./Videos/:/usr/src/app/Videos
       - ./nginx/nginx.conf /etc/nginx/conf.d/nginx.conf
       - static_volume:/usr/src/app/staticfiles
-      - /home/important_data/torrent:/usr/torrent/:rw
     ports:
       - 80:80
     depends_on:
@@ -58,7 +56,7 @@ services:
     build: ./frontend
     volumes:
       - ./frontend/:/usr/src/app/
-      - node_modules:/usr/src/app/node_modules
+      - node_modules_volume:/usr/src/app/node_modules
     command: bash -c "npm start"
     depends_on:
       - web
@@ -73,9 +71,9 @@ services:
       dockerfile: ./backend/Dockerfile
     command: celery -A StreamingServer worker -l info
     volumes:
+        - /home/StreamServer/Videos:/usr/src/app/Videos
+        - /home/StreamServer/torrent:/usr/torrent/:rw
         - ./backend/:/usr/src/app/
-        - ./Videos/:/usr/src/app/Videos
-        - /home/important_data/torrent:/usr/torrent/:rw
     env_file:
         - .env
     depends_on:
@@ -88,9 +86,9 @@ services:
       dockerfile: ./backend/Dockerfile
     command: celery -A StreamingServer beat -l info
     volumes:
+      - /home/StreamServer/Videos:/usr/src/app/Videos
+      - /home/StreamServer/torrent:/usr/torrent/:rw
       - ./backend/:/usr/src/app/
-      - ./Videos/:/usr/src/app/Videos
-      - /home/important_data/torrent:/usr/torrent/:rw
     env_file:
         - .env
     depends_on:
