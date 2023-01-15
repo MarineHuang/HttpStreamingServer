@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
                 ('srt_sync_path', models.CharField(default='', max_length=300)),
                 ('vtt_path', models.CharField(default='', max_length=300)),
                 ('vtt_sync_path', models.CharField(default='', max_length=300)),
-                ('language', models.CharField(choices=[('fra', 'French'), ('eng', 'English'), ('OV', 'Original Version')], default='eng', max_length=3)),
+                ('language', models.CharField(choices=[('chi', 'Chinese'), ('eng', 'English')], default='eng', max_length=3)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True, db_index=True)),
                 ('uploaded_data', models.FileField(default='', upload_to='uploads/')),

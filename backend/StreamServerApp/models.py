@@ -150,13 +150,11 @@ class Subtitle(models.Model):
     srt_sync_path = models.CharField(max_length=300, default="")
     vtt_path = models.CharField(max_length=300, default="")
     vtt_sync_path = models.CharField(max_length=300, default="")
-    FRENCH = 'fra'
+    CHINESE = 'chi'
     ENGLISH = 'eng'
-    OV = 'OV'
     LANGUAGE_CHOICES = [
-        (FRENCH, 'French'),
+        (CHINESE, 'Chinese'),
         (ENGLISH, 'English'),
-        (OV, 'Original Version'),
     ]
     language = models.CharField(
         max_length=3,
