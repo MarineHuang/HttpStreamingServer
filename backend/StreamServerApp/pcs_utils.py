@@ -122,23 +122,24 @@ class BaiduPcsClient():
         filename = os.path.basename(remote_path)
         local_path = os.path.join(local_dir, filename)
         localpath_tmp = local_path + ".tmp"
-        print(f"[italic blue]downloading[/italic blue]: {remote_path} to {local_path}")
+        if os.path.exists(localpath_tmp):
+            os.remove(localpath_tmp)
 
         # 判断该文件是否需要下载
         if os.path.exists(local_path):
             file_stat = os.stat(local_path)
             if int(file_stat.st_mtime) != pcsfile.local_mtime \
                 or file_stat.st_size != pcsfile.size:
-                print("not need to download {} to {}".format(remote_path, local_path))
+                #print("not need to download {} to {}".format(remote_path, local_path))
                 return local_path
 
+        print(f"downloading: {remote_path} to {local_path}")
         cmd = self.aget_py_cmd(url=dlink, localpath=localpath_tmp)
         child = subprocess.run(cmd, stdout=subprocess.DEVNULL if self.downloadparams.quiet else None)
         if child.returncode != 0:
-            print(
-                f"[italic]{cmd}[/italic] fails. return code: [red]{child.returncode}[/red]"
-            )
+            print(f"{cmd} fails, return code: {child.returncode}")
             print("download failed: {}".format(remote_path))
+            os.remove(localpath_tmp)
             return None
         else:
             shutil.move(localpath_tmp, local_path)
