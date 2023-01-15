@@ -103,16 +103,6 @@ class BaiduPcsClient():
 
     def download_file(self, pcsfile: PcsFile):
         remote_path = pcsfile.path
-        dlink = None
-        try:
-            dlink = self.api.download_link(remote_path)
-        except:
-            print(f"error: get download link failed for : {remote_path}")
-            return None
-        
-        if not dlink:
-            print(f"error: get download link failed for : {remote_path}")
-            return None
         
         relative_dir = os.path.relpath(os.path.dirname(remote_path), start=self.remote_rootdir)
         local_dir = os.path.join(self.local_rootdir, relative_dir)
@@ -134,6 +124,17 @@ class BaiduPcsClient():
                 return local_path
 
         print(f"downloading: {remote_path} to {local_path}")
+        dlink = None
+        try:
+            dlink = self.api.download_link(remote_path)
+        except:
+            print(f"error: get download link failed for : {remote_path}")
+            return None
+        
+        if not dlink:
+            print(f"error: get download link failed for : {remote_path}")
+            return None
+        
         cmd = self.aget_py_cmd(url=dlink, localpath=localpath_tmp)
         child = subprocess.run(cmd, stdout=subprocess.DEVNULL if self.downloadparams.quiet else None)
         if child.returncode != 0:
