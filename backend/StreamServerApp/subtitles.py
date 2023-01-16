@@ -5,6 +5,7 @@ import io
 from StreamingServer import settings
 from StreamServerApp.media_management.utils import FileType, get_file_type
 from StreamServerApp.media_processing import extract_subtitle, convert_subtitles_to_webvtt
+from StreamServerApp.utils import get_file_language, get_file_language_byname
 from AIServiceApp.transcription import transcript_media_file
 from AIServiceApp.subtitle_aligner import force_align
 import json
@@ -76,12 +77,9 @@ def get_subtitles(video_path, video_folder=None):
         return: empty string if no subtitles was found. Otherwise return dict of subtitle absolute location with str(Language) as key
     """
     print("get_subtitle function: video_path={}, video_folder={}".format(video_path, video_folder))
-    languages_to_retrieve = {
-        'eng',
-        'fra',
-    }
-    webvtt_fullpath = {}
-    srt_fullpath = {}
+    
+    webvtt_dict = {}
+    srt_dict = {}
     
     # step1: try search subtitle from local disk
     video_filename, video_ext = os.path.splitext(os.path.basename(video_path))
@@ -92,9 +90,16 @@ def get_subtitles(video_path, video_folder=None):
                 continue
 
             srt_file_path = None
+            language = None # 'eng', 'chi', 'fri'
+
             if FileType.SUBTITLE == get_file_type(f):
+                # f文件是srt ass等字幕文件
                 srt_file_path = os.path.join(root, f)
+                language = get_file_language_byname(os.path.join(root, f))
             elif FileType.QUASI_SUBTITLE == get_file_type(f):
+                # f文件是断好句的字幕文件
+                language = get_file_language(os.path.join(root, f))
+
                 srt_file_path = os.path.join(root, video_filename+'.srt')
                 trans_file_path = os.path.join(root, video_filename+'.trans')
                 if os.path.exists(trans_file_path):
@@ -117,35 +122,49 @@ def get_subtitles(video_path, video_folder=None):
                 or not os.path.exists(srt_file_path):
                 continue
 
-            srt_fullpath['eng'] = srt_file_path 
+            # default language is English
+            if language is None:
+                language = 'eng'
+
+            if language in webvtt_dict.keys() \
+                or language in srt_dict.keys():
+                print(f"{language} subtitle exists already for {video_path}")
+                continue
+
             webvtt_file_name = os.path.splitext(os.path.basename(srt_file_path))[0] + '.vtt'
-            
             if video_folder is None:
                 webvtt_file_path = os.path.join(settings.VIDEO_ROOT, webvtt_file_name)
             else:
                 webvtt_file_path = os.path.join(video_folder, webvtt_file_name)
             
             convert_subtitles_to_webvtt(srt_file_path, webvtt_file_path)
-            webvtt_fullpath['eng'] = webvtt_file_path
+            
+            srt_dict[language] = srt_file_path
+            webvtt_dict[language] = webvtt_file_path
 
-            print("get subtitle success for {}".format(video_path))
-            return [webvtt_fullpath, srt_fullpath]
+            print(f"get {language} subtitle success: {srt_file_path} -> {video_path}")
 
     # step2: try download subtitle from subliminal
+    #languages_to_retrieve = {
+    #    'eng',
+    #    'fra',
+    #}
     #try:
     #    video = Video.fromname(video_path)
     #    try:
-    #        webvtt_fullpath, srt_fullpath = handle_subliminal_download(
+    #        webvtt_dict, srt_dict = handle_subliminal_download(
     #            video, video_path, languages_to_retrieve)
     #    except:
-    #        webvtt_fullpath = {}
-    #        srt_fullpath = {}
+    #        webvtt_dict = {}
+    #        srt_dict = {}
     #except ValueError:
     #    #This usually happens when there is not enough data for subliminal to guess
     #    pass
 
-    print("get no subtitle for {}".format(video_path))
-    return [webvtt_fullpath, srt_fullpath]
+    if 0 == len(webvtt_dict.keys()) and 0 == len(srt_dict.keys()):
+        print(f"get no subtitle for {video_path}")
+    
+    return [webvtt_dict, srt_dict]
 
 
 def add_time_stamp(transcription_result,
