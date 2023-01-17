@@ -123,7 +123,7 @@ def get_subtitles(video_path, video_folder=None):
                 continue
 
             # default language is English
-            if language is None:
+            if language is None or 'unknown' == language:
                 language = 'eng'
 
             if language in webvtt_dict.keys() \
