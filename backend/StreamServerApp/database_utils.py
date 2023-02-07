@@ -156,6 +156,7 @@ def add_one_video_to_database(full_path,
         height=video_infos['video_height'],
         width=video_infos['video_width'],
         thumbnail=video_infos['remote_thumbnail_url'],
+        description='',
     )
 
     # parse movie or series, episode & season

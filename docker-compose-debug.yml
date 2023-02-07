@@ -32,7 +32,7 @@ services:
       - /home/StreamServer/Videos:/usr/src/app/Videos
       - /home/StreamServer/torrent:/usr/torrent/:rw
       - ./backend/:/usr/src/app/
-      - static_volume:/usr/src/app/staticfiles
+      - static_volume:/usr/static/
       - ipython_volume:/root/.ipython
     command: bash -c "./wait-for-it.sh db:5432 -- python3 /usr/src/app/manage.py runserver 0.0.0.0:8000"
     depends_on:
@@ -46,7 +46,7 @@ services:
       - /home/StreamServer/torrent:/usr/torrent/:rw
       - ./backend/:/usr/src/app/
       - ./nginx/nginx.conf /etc/nginx/conf.d/nginx.conf
-      - static_volume:/usr/src/app/staticfiles
+      - static_volume:/usr/static/
     ports:
       - 80:80
     depends_on:

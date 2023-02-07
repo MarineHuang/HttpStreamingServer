@@ -18,14 +18,19 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf.urls import url
 from StreamServerApp import views as appviews
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('streaming/', include('StreamServerApp.urls')),
     path('ai/', include('AIServiceApp.urls')),
     path('admin/', admin.site.urls),
+    path('ckeditor/', include('ckeditor_uploader.urls')),
 	# empty url
 	url(r'^$', appviews.videos.index),
 ]
+
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:
     import debug_toolbar

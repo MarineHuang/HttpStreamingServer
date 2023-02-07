@@ -8,6 +8,7 @@ from StreamServerApp.media_processing import convert_subtitles_to_webvtt
 from StreamServerApp.media_management.fileinfo import createfileinfo, readfileinfo
 import os
 import subprocess
+from ckeditor.fields import RichTextField
 
 
 class SearchManager(models.Manager):
@@ -68,6 +69,8 @@ class Video(models.Model):
     season = models.PositiveSmallIntegerField(default=None, blank=True, null=True, db_index=True)
 
     history = models.ManyToManyField(User, through='UserVideoHistory')
+
+    description = RichTextField(default="")
 
     objects = SearchManager()
     
