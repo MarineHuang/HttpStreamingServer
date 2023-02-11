@@ -1,0 +1,26 @@
+.hover-hilight:hover{
+    cursor: pointer;
+    color: white;
+}
+
+.container-v1 {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    max-width: 2540px;
+    min-width: 1080px;
+}
+
+.left-container {
+    height: fit-content;
+    z-index: 1;
+    width: 668px;
+}
+
+.right-container {
+    width: 350px;
+    flex: none;
+    margin-left: 30px;
+    position: relative;
+}
+

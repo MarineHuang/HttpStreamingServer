@@ -1,0 +1,59 @@
+.clear {
+    clear: both;
+}
+
+.floatleft {
+    position: relative;
+    float: left;
+}
+
+.floatright {
+    position: relative;
+    float: right;
+}
+
+.area {
+  position: relative;
+}
+  
+.area-inner {
+  margin: 0 auto;
+}
+
+.list-video-block {
+  margin-left: -20px;
+}
+
+.video-block {
+  height: 200px;
+  overflow: hidden;
+  margin-left: 20px;
+  border: 2px solid transparent;
+}
+
+
+.video-block:hover{
+  cursor: pointer;
+  color: white;
+  border: 2px solid white;
+}
+
+.video-block-main {
+  display: block;
+  overflow: hidden;
+}
+.video-block-info {
+  -webkit-transition: color .2s ease, height .2s ease;
+  -moz-transition: color .2s ease, height .2s ease;
+  -ms-transition: color .2s ease, height .2s ease;
+  -o-transition: color .2s ease, height .2s ease;
+  transition: color .2s ease, height .2s ease;
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  font-size: 12px;
+  color: #000;
+  line-height: 16px;
+  height: 18px;
+  overflow: hidden;
+}

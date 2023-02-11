@@ -32,10 +32,23 @@
     display: block!important;
 }
 
-.videocontent {
-    width: 80%;
+.video-title {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    font-size: 20px;
+    font-weight: 500;
+    text-align: left;
+}
+
+.video-content {
+    width: 100%;
     max-width: 640px;
-    margin: 0 auto;
+    /*margin: 0 auto;*/
+}
+
+.video-description {
+    font-size: 15px;
+    text-align: left;
 }
 
 /* Text Track Styles */
@@ -61,3 +74,4 @@
     text-align: center;
     margin-bottom: 0.1em;
 }
+

@@ -160,14 +160,22 @@ function VideoDetail  ({ video, handleVideoSelect, authTokens, setHistoryPager }
 
     return (
         <div>
+            <div className="ui segment">
+                <h4 className="video-title">{video.name}</h4>
+            </div>
+
             <div className="ui embed">
-                <div class="videocontent">
+                <div class="video-content">
                     <div ref={videoRef} />
                 </div>
             </div>
-            <div className="ui segment" style={{marginTop: '2em'}}>
-                <h4 className="ui header">{video.name}</h4>
+
+            <div className="ui segment" >
+                <div className="video-description" dangerouslySetInnerHTML={{
+                    __html: video.description 
+                }}></div>
             </div>
+
             {/*<ResolutionSelector playerref={player} video={video} playerIsInitialized={playerIsInitialized}/>*/}
             <div className="ui segment">
                 {video.nextEpisode &&
@@ -176,10 +184,10 @@ function VideoDetail  ({ video, handleVideoSelect, authTokens, setHistoryPager }
                     </Button>
                 }
             </div>
+            
             <div className="hideifmobile">
             {/*authTokens && <SubtitleForm video={video} token={authTokens} />*/}
             </div>
-
         </div>
     );
 };

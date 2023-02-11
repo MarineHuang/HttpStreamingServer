@@ -6,8 +6,9 @@ import { AuthContext } from './context/auth';
 import { client } from '../api/djangoAPI';
 import Header from "./header/Header";
 import './App.css'
-import Carousels from "./Carousels/Carousels";
 import AccessDenied from "./AccessDenied";
+import Carousels from "./Carousels/Carousels";
+import VideoSelected from './Video/VideoSelected';
 const utils = require ("./../utils/utils");
 
 function App(props) {
@@ -143,22 +144,39 @@ function App(props) {
                 userinfos={userInfos}
                 setUserInfos={setUserInfos}
             />
-            {authTokens ?
-                <Carousels
-                    video={selectedVideo}
-                    handleVideoSelect={handleVideoSelect}
-                    setHistoryPager={setHistoryPager}
-                    authTokens={authTokens}
-                    historyPager={historyPager}
-                    seriesPager={seriesPager}
-                    seriesVideos={seriesVideos}
-                    moviesPager={moviesPager}
-                    moviesVideos={moviesVideos}
-                    isInitialVideoDone={isInitialVideoDone}
-                />
-                :
-                <AccessDenied/>
-            }
+            
+            {/* not login */}
+            {!authTokens && <AccessDenied/>}
+            
+            {/* login and no video selectd */}
+            {(authTokens && !selectedVideo) && 
+            <Carousels
+                video={selectedVideo}
+                handleVideoSelect={handleVideoSelect}
+                setHistoryPager={setHistoryPager}
+                authTokens={authTokens}
+                historyPager={historyPager}
+                seriesPager={seriesPager}
+                seriesVideos={seriesVideos}
+                moviesPager={moviesPager}
+                moviesVideos={moviesVideos}
+                isInitialVideoDone={isInitialVideoDone}
+            />}
+
+            {/* login and video selectd */}
+            {(authTokens && selectedVideo) && 
+            <VideoSelected
+                video={selectedVideo}
+                handleVideoSelect={handleVideoSelect}
+                setHistoryPager={setHistoryPager}
+                authTokens={authTokens}
+                historyPager={historyPager}
+                seriesPager={seriesPager}
+                seriesVideos={seriesVideos}
+                moviesPager={moviesPager}
+                moviesVideos={moviesVideos}
+                isInitialVideoDone={isInitialVideoDone}
+            />}
             
             {(displayModal && toggleModal) &&
             <Login
@@ -168,6 +186,7 @@ function App(props) {
                 userinfos={userInfos}
                 setUserInfos={setUserInfos}
             />}
+            
             {(displayModal && !toggleModal) &&
             <Signup
                 toggleModalBox={toggleModalBox}
