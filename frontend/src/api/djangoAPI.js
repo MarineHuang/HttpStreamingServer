@@ -400,7 +400,7 @@ var client = new Client();
 
 function Video(response) {
     this.id = response.id;
-    this.name = response.movie !== null ? response.movie : response.name;
+    this.name = response.name;
     this.videoUrl = response.video_url;
     this.thumbnail = response.thumbnail;
     this.subtitles = response.subtitles;
@@ -410,6 +410,7 @@ function Video(response) {
     this.movie = response.movie;
     this.time = response.time;
     this.nextEpisode = response.next_episode;
+    this.description = response.description;
 }
 
 function SeriesPager(response) {
