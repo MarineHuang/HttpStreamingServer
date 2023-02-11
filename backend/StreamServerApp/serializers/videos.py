@@ -23,6 +23,7 @@ class VideoListSerializer(serializers.ModelSerializer):
             'movie',
             'episode',
             'season',
+            'description',
         ]
 
 
@@ -53,6 +54,7 @@ class VideoSerializer(serializers.ModelSerializer):
             'season',
             'next_episode',
             'time',
+            'description',
         ]
 
 
