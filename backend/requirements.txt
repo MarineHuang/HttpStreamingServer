@@ -20,9 +20,9 @@ redis==3.4.1
 ffsubsync==0.4.3
 baidupcs_py==0.7.5
 celery-redbeat==2.0.0
-aliyun-python-sdk-core
-oss2
-Levenshtein
+aliyun-python-sdk-core==2.13.36
+oss2==2.16.0
+Levenshtein==0.20.9
 srt
-chardet
-django-ckeditor
+chardet==5.1.0
+django-ckeditor==6.5.1
