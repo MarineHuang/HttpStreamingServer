@@ -1,47 +1,35 @@
-.clear {
-    clear: both;
+
+
+.video-list-box {
+  display: -webkit-flex; /* Safari */
+  display: flex;
+  flex-direction: row; /* | row-reverse | column | column-reverse */
+  flex-wrap: wrap; /* nowrap(默认) | wrap | wrap-reverse */
+  justify-content: space-between;
+  align-items: flex-start;
+  align-content: flex-start;
 }
 
-.floatleft {
-    position: relative;
-    float: left;
-}
-
-.floatright {
-    position: relative;
-    float: right;
-}
-
-.area {
-  position: relative;
-}
-  
-.area-inner {
-  margin: 0 auto;
-}
-
-.list-video-block {
-  margin-left: -20px;
-}
-
-.video-block {
-  height: 200px;
+.video-list-item {
+  width: 355.6px;
   overflow: hidden;
-  margin-left: 20px;
   border: 2px solid transparent;
 }
 
 
-.video-block:hover{
+.video-list-item:hover{
   cursor: pointer;
   color: white;
-  border: 2px solid white;
+  border: 2px solid transparent;
 }
 
-.video-block-main {
-  display: block;
+.img-cover{
+  width: 100%!important;
+  height: 200px;
   overflow: hidden;
+  object-fit: cover;
 }
+
 .video-block-info {
   -webkit-transition: color .2s ease, height .2s ease;
   -moz-transition: color .2s ease, height .2s ease;

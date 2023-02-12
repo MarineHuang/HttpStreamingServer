@@ -74,20 +74,17 @@ export default  class VideoList extends Component {
     render() {
         const renderVideos = this.state.videos.map((video) => {
             return (
-            <div className="video-block floatleft" 
+            <div className="video-list-item" 
                 onClick={() => this.props.handleVideoSelect(video)}>
-                <img className="video-block-main" src={video.thumbnail}/>
-                <p className="video-block-info">{video.name}</p>
+                <img className="img-cover" src={video.thumbnail}/>
+                <div className="video-block-info">{video.name}</div>
             </div>);
         });
         
         return (
-        <div className="area">
-            <div className="area-inner">
-                <div className="list-video-block floatleft">
-                    {renderVideos}
-                </div>
-                <div className="clear"></div>
+        <div>
+            <div className="video-list-box">
+                {renderVideos}
             </div>
         </div>
         );
