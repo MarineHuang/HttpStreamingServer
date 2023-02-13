@@ -5,14 +5,14 @@ import ReactDOM from 'react-dom';
 import { BrowserRouter } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css'; // add this
 import * as serviceWorker from './serviceWorker';
-import * as Sentry from '@sentry/browser';
+//import * as Sentry from '@sentry/browser';
 import App from './components/App';
 import { ThemeProvider, CSSReset } from '@chakra-ui/core'
 
 
-if(process.env.REACT_APP_SENTRY_DSN){
-    Sentry.init({dsn: process.env.REACT_APP_SENTRY_DSN});
-}
+//if(process.env.REACT_APP_SENTRY_DSN){
+//    Sentry.init({dsn: process.env.REACT_APP_SENTRY_DSN});
+//}
 
 ReactDOM.render(
     <BrowserRouter>
