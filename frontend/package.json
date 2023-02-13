@@ -15,6 +15,7 @@
     "axios": "^0.18.0",
     "bootstrap": "4.3.1",
     "classnames": "^2.2.6",
+    "dashjs": "^4.4.1",
     "emotion-theming": "^10.0.27",
     "node-sass": "^4.12.0",
     "pure-react-carousel": "^1.23.3",
@@ -22,15 +23,15 @@
     "react": "^16.8.6",
     "react-bootstrap": "latest",
     "react-dom": "^16.8.6",
+    "react-infinite-scroller": "^1.2.6",
     "react-router-dom": "^5.1.2",
     "react-scripts": "3.0.1",
     "react-slick": "^0.25.2",
     "reactstrap": "^8.4.1",
-    "dashjs": "^4.4.1",
     "srt-webvtt": "1.0.1",
-    "styled-components": "latest",
-    "video.js": "7.20.3",
-    "videojs-contrib-dash": "5.1.1"
+    "styled-components": "^5.3.6",
+    "video.js": "^7.20.3",
+    "videojs-contrib-dash": "^5.1.1"
   },
   "scripts": {
     "prestart": "if [ ! -d node_modules ]; then npm install; fi",

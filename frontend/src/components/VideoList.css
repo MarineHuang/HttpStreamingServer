@@ -45,3 +45,7 @@
   height: 18px;
   overflow: hidden;
 }
+
+.infinite-scroll-container {
+  overflow: auto;
+}
