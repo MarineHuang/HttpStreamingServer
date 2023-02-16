@@ -11,6 +11,13 @@ import subprocess
 from ckeditor.fields import RichTextField
 
 
+LANGUAGE_CHOICES = [
+    ('unk', 'Unknown'),
+    ('eng', 'English'),
+    ('chi', 'Chinese'),
+]
+
+
 class SearchManager(models.Manager):
     def search_trigramm(self, model_field, query):
         queryset = self.annotate(similarity=TrigramSimilarity(model_field, query)) \
@@ -71,6 +78,14 @@ class Video(models.Model):
     history = models.ManyToManyField(User, through='UserVideoHistory')
 
     description = RichTextField(default="")
+
+    voice_language = models.CharField(
+        max_length=3,
+        choices=LANGUAGE_CHOICES,
+        default='eng',
+    )
+
+    voice_text = RichTextField(default="")
 
     objects = SearchManager()
     
@@ -153,16 +168,11 @@ class Subtitle(models.Model):
     srt_sync_path = models.CharField(max_length=300, default="")
     vtt_path = models.CharField(max_length=300, default="")
     vtt_sync_path = models.CharField(max_length=300, default="")
-    CHINESE = 'chi'
-    ENGLISH = 'eng'
-    LANGUAGE_CHOICES = [
-        (CHINESE, 'Chinese'),
-        (ENGLISH, 'English'),
-    ]
+    
     language = models.CharField(
         max_length=3,
         choices=LANGUAGE_CHOICES,
-        default=ENGLISH,
+        default='eng',
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, db_index=True)

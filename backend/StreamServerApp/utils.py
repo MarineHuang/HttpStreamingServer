@@ -49,7 +49,7 @@ def get_file_language(filepath):
     if language in language_map.keys():
         return language_map[language]
     else:
-        return 'unknown'
+        return 'unk'
 
 language_filenames = {
     'chi': ['cn', 'chi', 'zh-cn', '中文' ],
@@ -67,4 +67,4 @@ def get_file_language_byname(filepath):
             if lang_filename in filename_list:
                 return lang
 
-    return 'unknown'
+    return 'unk'

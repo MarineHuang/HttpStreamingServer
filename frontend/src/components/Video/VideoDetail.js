@@ -8,6 +8,8 @@ import './VideoDetail.css'
 import videojs from 'video.js';
 import 'video.js/dist/video-js.css';
 import 'videojs-contrib-dash';
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
 function VideoDetail  ({ video, handleVideoSelect, authTokens, setHistoryPager }) {
     const videoRef = useRef(null);
@@ -175,6 +177,27 @@ function VideoDetail  ({ video, handleVideoSelect, authTokens, setHistoryPager }
                     __html: video.description 
                 }}></div>
             </div>
+
+            <div className="ui segment">
+                <CKEditor
+                    editor={ ClassicEditor }
+                    data={ video.voiceText }
+                    onInit={ editor => {
+                        console.log( 'Editor is ready to use!', editor );
+                    }}
+                    onChange={ ( event, editor ) => {
+                        const data = editor.getData();
+                        console.log( { event, editor, data } );
+                    }}
+                    onBlur={ ( event, editor ) => {
+                        console.log( 'Blur.', editor );
+                    }}
+                    onFocus={ ( event, editor ) => {
+                        console.log( 'Focus.', editor );
+                    }}
+                />
+            </div>
+
 
             {/*<ResolutionSelector playerref={player} video={video} playerIsInitialized={playerIsInitialized}/>*/}
             <div className="ui segment">

@@ -16,6 +16,8 @@ from StreamServerApp.subtitles import init_cache
 
 from StreamServerApp.media_management.fileinfo import createfileinfo, readfileinfo
 from StreamServerApp.media_processing import prepare_video, get_video_type_and_info
+from StreamServerApp.media_management.utils import MEDIA_QUASI_SUBTITLE_EXTS
+from StreamServerApp.utils import get_file_language
 
 
 @shared_task
@@ -145,6 +147,19 @@ def add_one_video_to_database(full_path,
         print("video infos are empty, don't add to database")
         return 0
 
+    # get voice text and language for this video
+    voice_language = 'unk'
+    voice_text = ''
+    
+    video_filename, video_ext = os.path.splitext(full_path)
+    for voice_text_ext in MEDIA_QUASI_SUBTITLE_EXTS:
+        voice_text_path = f"{video_filename}.{voice_text_ext}"
+        if os.path.exists(voice_text_path):
+            voice_language = get_file_language(voice_text_path)
+            with open(voice_text_path, "r") as fp:
+                voice_text = fp.read()
+            break
+
     v = Video(
         name=filename,
         md5=video_infos['md5'],
@@ -157,6 +172,8 @@ def add_one_video_to_database(full_path,
         width=video_infos['video_width'],
         thumbnail=video_infos['remote_thumbnail_url'],
         description='',
+        voice_language=voice_language,
+        voice_text=voice_text,
     )
 
     # parse movie or series, episode & season

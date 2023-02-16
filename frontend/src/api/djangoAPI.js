@@ -411,6 +411,7 @@ function Video(response) {
     this.time = response.time;
     this.nextEpisode = response.next_episode;
     this.description = response.description;
+    this.voiceText = response.voice_text;
 }
 
 function SeriesPager(response) {

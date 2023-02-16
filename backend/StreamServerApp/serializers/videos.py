@@ -55,6 +55,7 @@ class VideoSerializer(serializers.ModelSerializer):
             'next_episode',
             'time',
             'description',
+            'voice_text',
         ]
 
 
